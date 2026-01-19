@@ -1,21 +1,15 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
-
 import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/model/constants.dart';
-import 'package:hiddify/core/router/router.dart';
-import 'package:hiddify/features/config_option/data/config_option_repository.dart';
 import 'package:hiddify/features/connection/model/connection_status.dart';
 import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
 import 'package:hiddify/features/proxy/active/active_proxy_notifier.dart';
 import 'package:hiddify/features/window/notifier/window_notifier.dart';
 import 'package:hiddify/gen/assets.gen.dart';
-import 'package:hiddify/singbox/model/singbox_config_enum.dart';
 import 'package:hiddify/utils/utils.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:tray_manager/tray_manager.dart';
-import 'package:window_manager/window_manager.dart';
 
 part 'system_tray_notifier.g.dart';
 
@@ -23,14 +17,12 @@ part 'system_tray_notifier.g.dart';
 class SystemTrayNotifier extends _$SystemTrayNotifier with AppLogger {
   @override
   Future<void> build() async {
-    if (!PlatformUtils.isDesktop) return;
-
-    final activeProxy = await ref.watch(activeProxyNotifierProvider);
+    final activeProxy = ref.watch(activeProxyProvider);
     final delay = activeProxy.value?.urlTestDelay ?? 0;
     final newConnectionStatus = delay > 0 && delay < 65000;
     ConnectionStatus connection;
     try {
-      connection = await ref.watch(connectionNotifierProvider.future);
+      connection = await ref.watch(connectionProvider.future);
     } catch (e) {
       loggy.warning("error getting connection status", e);
       connection = const ConnectionStatus.disconnected();
@@ -39,8 +31,8 @@ class SystemTrayNotifier extends _$SystemTrayNotifier with AppLogger {
     final t = ref.watch(translationsProvider);
 
     var tooltip = Constants.appName;
-    final serviceMode = ref.watch(ConfigOptions.serviceMode);
-    if (connection == Disconnected()) {
+    // Yumash Edition: serviceMode removed, always VPN
+    if (connection == const Disconnected()) {
       setIcon(connection);
     } else if (newConnectionStatus) {
       setIcon(const Connected());
@@ -50,33 +42,18 @@ class SystemTrayNotifier extends _$SystemTrayNotifier with AppLogger {
       } else {
         tooltip = "$tooltip : -";
       }
-      // else if (delay>1000)
-      //   SystemTrayNotifier.setIcon(timeout ? Disconnecting() : Connecting());
     } else {
       setIcon(const Disconnecting());
       tooltip = "$tooltip - ${connection.present(t)}";
     }
-    if (Platform.isMacOS) {
-      windowManager.setBadgeLabel("${delay}ms");
-    }
-    if (!Platform.isLinux) await trayManager.setToolTip(tooltip);
-
-    final destinations = <(String label, String location)>[
-      (t.home.pageTitle, const HomeRoute().location),
-      (t.proxies.pageTitle, const ProxiesRoute().location),
-      (t.logs.pageTitle, const LogsOverviewRoute().location),
-      (t.settings.pageTitle, const SettingsRoute().location),
-      (t.about.pageTitle, const AboutRoute().location),
-    ];
-
-    // loggy.debug('updating system tray');
+    await trayManager.setToolTip(tooltip);
 
     final menu = Menu(
       items: [
         MenuItem(
           label: t.tray.dashboard,
           onClick: (_) async {
-            await ref.read(windowNotifierProvider.notifier).open();
+            await ref.read(windowProvider.notifier).open();
           },
         ),
         MenuItem.separator(),
@@ -91,50 +68,21 @@ class SystemTrayNotifier extends _$SystemTrayNotifier with AppLogger {
           checked: false,
           disabled: connection.isSwitching,
           onClick: (_) async {
-            await ref.read(connectionNotifierProvider.notifier).toggleConnection();
+            await ref.read(connectionProvider.notifier).toggleConnection();
           },
         ),
         MenuItem.separator(),
+        // Yumash Edition: VPN mode only, no need for service mode selection
         MenuItem(
-          label: t.config.serviceMode,
+          label: t.config.serviceModes.tun,
           icon: Assets.images.trayIconIco,
           disabled: true,
         ),
-
-        ...ServiceMode.values.map(
-          (e) => MenuItem.checkbox(
-            checked: e == serviceMode,
-            key: e.name,
-            label: e.present(t),
-            onClick: (menuItem) async {
-              final newMode = ServiceMode.values.byName(menuItem.key!);
-              loggy.debug("switching service mode: [$newMode]");
-              await ref.read(ConfigOptions.serviceMode.notifier).update(newMode);
-            },
-          ),
-        ),
-
-        // MenuItem.submenu(
-        //   label: t.tray.open,
-        //   submenu: Menu(
-        //     items: [
-        //       ...destinations.map(
-        //         (e) => MenuItem(
-        //           label: e.$1,
-        //           onClick: (_) async {
-        //             await ref.read(windowNotifierProvider.notifier).open();
-        //             ref.read(routerProvider).go(e.$2);
-        //           },
-        //         ),
-        //       ),
-        //     ],
-        //   ),
-        // ),
         MenuItem.separator(),
         MenuItem(
           label: t.tray.quit,
-          onClick: (_) async {
-            return ref.read(windowNotifierProvider.notifier).quit();
+          onClick: (_) {
+            ref.read(windowProvider.notifier).quit();
           },
         ),
       ],
@@ -144,49 +92,21 @@ class SystemTrayNotifier extends _$SystemTrayNotifier with AppLogger {
   }
 
   static void setIcon(ConnectionStatus status) {
-    if (!PlatformUtils.isDesktop) return;
-    trayManager
-        .setIcon(
-          _trayIconPath(status),
-          isTemplate: Platform.isMacOS,
-        )
-        .asStream();
+    trayManager.setIcon(_trayIconPath(status)).asStream();
   }
 
   static String _trayIconPath(ConnectionStatus status) {
-    if (Platform.isWindows) {
-      final Brightness brightness = WidgetsBinding.instance.platformDispatcher.platformBrightness;
-      final isDarkMode = brightness == Brightness.dark;
-      switch (status) {
-        case Connected():
-          return Assets.images.trayIconConnectedIco;
-        case Connecting():
-          return Assets.images.trayIconDisconnectedIco;
-        case Disconnecting():
-          return Assets.images.trayIconDisconnectedIco;
-        case Disconnected():
-          if (isDarkMode) {
-            return Assets.images.trayIconIco;
-          } else {
-            return Assets.images.trayIconDarkIco;
-          }
-      }
-    }
-    final isDarkMode = false;
+    // Windows only - use .ico files
+    // Connected: orange, Connecting/Disconnecting: orange, Disconnected: gray
     switch (status) {
       case Connected():
-        return Assets.images.trayIconConnectedPng.path;
+        return Assets.images.trayIconConnectedIco; // Orange
       case Connecting():
-        return Assets.images.trayIconDisconnectedPng.path;
+        return Assets.images.trayIconConnectedIco; // Orange (connecting)
       case Disconnecting():
-        return Assets.images.trayIconDisconnectedPng.path;
+        return Assets.images.trayIconConnectedIco; // Orange (disconnecting)
       case Disconnected():
-        if (isDarkMode) {
-          return Assets.images.trayIconDarkPng.path;
-        } else {
-          return Assets.images.trayIconPng.path;
-        }
+        return Assets.images.trayIconDisconnectedIco; // Gray
     }
-    // return Assets.images.trayIconPng.path;
   }
 }

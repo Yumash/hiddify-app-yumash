@@ -19,8 +19,8 @@ class ActiveProxyFooter extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = ref.watch(translationsProvider);
-    final activeProxy = ref.watch(activeProxyNotifierProvider);
-    final ipInfo = ref.watch(ipInfoNotifierProvider);
+    final activeProxy = ref.watch(activeProxyProvider);
+    final ipInfo = ref.watch(ipInfoProvider);
 
     return AnimatedVisibility(
       axis: Axis.vertical,
@@ -50,9 +50,9 @@ class ActiveProxyFooter extends HookConsumerWidget {
                               const Gap(8),
                               IPText(
                                 ip: info.ip,
-                                onLongPress: () async {
+                                onLongPress: () {
                                   ref
-                                      .read(ipInfoNotifierProvider.notifier)
+                                      .read(ipInfoProvider.notifier)
                                       .refresh();
                                 },
                               ),
@@ -64,9 +64,9 @@ class ActiveProxyFooter extends HookConsumerWidget {
                               const Gap(8),
                               UnknownIPText(
                                 text: t.proxies.checkIp,
-                                onTap: () async {
+                                onTap: () {
                                   ref
-                                      .read(ipInfoNotifierProvider.notifier)
+                                      .read(ipInfoProvider.notifier)
                                       .refresh();
                                 },
                               ),
@@ -78,9 +78,9 @@ class ActiveProxyFooter extends HookConsumerWidget {
                               const Gap(8),
                               UnknownIPText(
                                 text: t.proxies.unknownIp,
-                                onTap: () async {
+                                onTap: () {
                                   ref
-                                      .read(ipInfoNotifierProvider.notifier)
+                                      .read(ipInfoProvider.notifier)
                                       .refresh();
                                 },
                               ),
@@ -118,7 +118,7 @@ class _StatsColumn extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = ref.watch(translationsProvider);
-    final stats = ref.watch(statsNotifierProvider).value;
+    final stats = ref.watch(statsProvider).value;
 
     return Directionality(
       textDirection: TextDirection.values[

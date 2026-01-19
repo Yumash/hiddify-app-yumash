@@ -1,297 +1,257 @@
-# Changelog
-
-## [0.16.0.dev] - 2024-2-18
-
-### New Features and Improvements
-
-- Changed App name to **Hiddify**
-- Changed App icon
-- Added Mux (**Experimental**)
-- Added Cloudflare WARP (**Experimental**)
-- Added connection info
-  - when connected, name of the active node, speed and IP address are shown on home page
-  - delay indicator below connection button shows active node's ping
-- Added VPN Service (Windows & Linux) (**Experimental**)
-  - VPN Service circumvents need for administrator permission while using TUN
-- Changed in-app icons (using [Fluent UI System Icons](https://github.com/microsoft/fluentui-system-icons))
-- Redesigned navigation flow, separating config options
-- Added haptic feedback
-- Added detailed subscription info in profile edit page
-- Added Chinese Taiwan language. [PR#410](https://github.com/hiddify/hiddify-next/pull/410) by [junlin03](https://github.com/junlin03) and [PR#491](https://github.com/hiddify/hiddify-next/pull/491) by [kouhe3](https://github.com/kouhe3)
-- Added Japanese Readme. [PR#371](https://github.com/hiddify/hiddify-next/pull/371) by [Ikko Eltociear Ashimine](https://github.com/eltociear)
-
-### Bug Fixes
-
-- Fixed TLS Tricks bugs
-- Fixed logs on iOS. [PR#414](https://github.com/hiddify/hiddify-next/pull/414) by [Amir Mohammadi](https://github.com/amirsaam) and [PR#416](https://github.com/hiddify/hiddify-next/pull/416) by [Ebrahim Tahernejad](https://github.com/EbrahimTahernejad)
-- Fixed Android service mode
-- Fixed UI inconsistencies
-- Fixed Readme download URL. [PR#482](https://github.com/hiddify/hiddify-next/pull/482) by [Ali Afsharzadeh](https://github.com/guoard)
-
-## [0.14.1.dev] - 2024-1-19
-
-### New Features and Improvements
-
-- Redesigned profile options on mobile
-- Improved configuration parser
-- Added export config json in iOS
-- Added iOS URL scheme. [PR#343](https://github.com/hiddify/hiddify-next/pull/343) by [Amir Mohammadi](https://github.com/amirsaam)
-- Added option to reset VPN profile on iOS
-
-### Bug Fixes
-
-- Fixed TLS Tricks causing app crash
-- Fixed connection status on iOS app relaunch
-- Fixed iOS connection stats
-- Fixed infinite subscription traffic
-- Fixed infinite subscription expiry. [PR#334](https://github.com/hiddify/hiddify-next/pull/334) by [Pavel Volkov](https://github.com/pvolkov)
-
-## [0.14.0.dev] - 2024-1-14
-
-### New Features and Improvements
-
-- Published initial iOS beta version on TestFlight
-  - Thanks to contributions from [GFWFighter](https://github.com/GFWFighter) and [Amir Mohammadi](https://github.com/amirsaam)
-  - iOS version is still in heavy development phase and there are known bugs
-- Added Spanish language. [PR#314](https://github.com/hiddify/hiddify-next/pull/314) by [AvatarStark](https://github.com/AvatarStark)
-- Changed Routing Assets page layout, separating assets by type
-- Improved descriptions for some of the options in settings page
-
-### Bug Fixes
-
-- Fixed Deep links on Windows
-- Fixed minor UI bugs
-- Fixed subscription profiles with infinite traffic
-
-## [0.13.6] - 2024-1-7
-
-- First stable 0.13.x release. check changes from 0.13.0.dev to 0.13.5.dev for more details.
-
-## [0.13.5.dev] - 2024-1-6
-
-### New Features and Improvements
-
-- Updated sing-box to version 1.7.8
-- Improved TLS Fragmentation. [PR#12](https://github.com/hiddify/hiddify-sing-box/pull/12) by [Kyōchikutō | キョウチクトウ](https://github.com/kyochikuto)
-- Improved v2ray config parser
-- Added cancel button on new profile modal
-- Changed default Connection Test URL
-
-### Bug Fixes
-
-- Fixed Android service mode
-- Fixed QR code scanner not scanning deep links
-
-## [0.13.4.dev] - 2024-1-4
-
-### New Features and Improvements
-
-- Added update all subscriptions
-  - Force update all subscription profiles regardless of their interval
-- Added basic authorization support
-- Changed app http client, improving experience when fetching profiles, geo assets etc.
-
-### Bug Fixes
-
-- Fixed profile auto update service
-- Fixed localization mistakes in Chinese. [PR#288](https://github.com/hiddify/hiddify-next/pull/288) by [wldjdjsks](https://github.com/huajizhige)
-
-## [0.13.3.dev] - 2024-1-2
-
-### New Features and Improvements
-
-- Added Bypass LAN option (Experimental)
-- Added Connection from LAN option (Experimental)
-- Added DNS Routing option
-- Changed outbound options section to TLS Tricks
-
-### Bug Fixes
-
-- Fixed profile edit bug where you were unable to change existing profile's URL
-- Fixed localization mistakes in Chinese. [PR#287](https://github.com/hiddify/hiddify-next/pull/287) by [Wu Jiahao](https://github.com/wujiahao15)
-
-## [0.13.2.dev] - 2023-12-31
-
-### Bug Fixes
-
-- Fixed db migration bug
-
-## [0.13.1.dev] - 2023-12-31
-
-### New Features and Improvements
-
-- Added experimental feature flag in settings
-- Added notice dialog when connecting with experimental features
-
-### Bug Fixes
-
-- Fixed multiple instance launch on windows
-- Removed auto connect on desktop which caused bugs on auto launch etc.
-- Fixed inlang localization setup
-
-## [0.13.0.dev] - 2023-12-29
-
-### New Features and Improvements
-
-- Added desktop shortcuts
-  - Add profile from clipboard by pressing `CTRL+V` (`CMD+V` on macOS)
-  - Close App window by pressing `CTRL+W` (`CMD+W` on macOS)
-  - Quit App by pressing `CTRL+Q` (`CMD+Q` on macOS)
-  - Open settings page by pressing `CMD+,` on macOS
-- Added Android high refresh rate screen support
-
-### Bug Fixes
-
-- Fixed silent start bug where screen would blink
-- Refactored Window management and system tray, fixing minor bugs
-- Fixed windows portable release again!
-
-## [0.12.3] - 2023-12-28
-
-### New Features and Improvements
-
-- Added version number in window title on desktop
-- Added Afghanistan (af) region with default bypass rules
-
-### Bug Fixes
-
-- Fixed modal bug where config options were unmodifiable. [PR#267](https://github.com/hiddify/hiddify-next/pull/267) by [在7楼](https://github.com/RayWangQvQ)
-- Fixed windows portable release
-
-## [0.12.2] - 2023-12-23
-
-### New Features and Improvements
-
-- Updated Sing-box to Version 1.7.6
-
-### Bug Fixes
-
-- Fixed app log file not including stacktrace
-- Fixed initialization process failing for non-essential dependencies
-- Fixed analytics preferences requiring app restart
-
-## [0.12.1] - 2023-12-21
-
-### Bug Fixes
-
-- Fixed Android service mode
-- Fixed [preferences initialization error on Windows and Linux](https://github.com/flutter/flutter/issues/89211)
-- Fixed incorrect privacy policy URL
-- Bumped Android compile and target SDK version (34)
-
-## [0.12.0] - 2023-12-20
-
-### New Features and Improvements
-
-- Added TLS Tricks (experimental)
-  - Including TLS fragments and Mixed SNI case. This feature might effect performance and battery life
-- Added dynamic notification on Android
-  - Active profile name and transfer speed are now shown in notification
-- Added basic D-pad support for Android TV
-- Added soffchen to recommended geo assets
-- Added option to reset Config Options
-- Improved text input field's accessibility and traversal
-
-### Bug Fixes
-
-- Refactored significant portions of the app
-- Fixed incorrect profile parsing when missing headers
-- Fixed geo assets bug where assets were deactivated
-- Changed default memory limit option on desktop, fixing out of memory bug on macOS
-- Fixed macOS icon
-- Fixed system tray behavior
-- Fixed incorrect casing of locale names
-- Updated sing-box to version 1.7.0
-- Fixed Chinese typography bug (thanks to [betaxab](https://github.com/betaxab))
-- Fixed localization mistakes in Russian. [PR#189](https://github.com/hiddify/hiddify-next/pull/189) by [jomertix](https://github.com/jomertix)
-
-## [0.11.1] - 2023-11-19
-
-### Bug Fixes
-
-- Fixed Android manifest bug.
-
-## [0.11.0] - 2023-11-19
-
-### New Features and Improvements
-
-- Changed Responsive UI Behavior
-  - Now app is responsive on all platforms with appropriate routing setup.
-- Added Simplified Service Modes
-  - Choose between VPN(Tun), System Proxy and Proxy only modes. (System Proxy available on desktop)
-- Added Share Functionality
-  - Share configuration as json(export to clipboard) or share subscription link as QR code.
-- Redesigned System Tray on Desktop
-  - Options have been simplified and a new mode selector and navigation options are added.
-- Added Privilege Checks for VPN(TUN) on Desktop
-- Added Auto Connect on Start
-  - On desktop, app will try to connect to the last used profile on startup. (if last session was not explicitly disconnected by the user)
-- Added AppCast Update Checker
-  - Checking for new versions of the app will use a more reliable approach on all platforms.
-- Added Geo Asset Settings
-  - Update geo assets and use recommended providers
-- Added **winget** Release
-  - Now you're able to install and update Hiddify on Windows using [winget](https://learn.microsoft.com/en-us/windows/package-manager/winget/).
-- Added Turkish Translations. [PR#173](https://github.com/hiddify/hiddify-next/pull/173) by [Hasan Karlı](https://github.com/hasankarli)
-- Changed in-app Toasts
-- Updated Core Sing-box Version to 1.7.0
-- Improved Network Reliability While Adding/Updating Subscriptions
-- Improved QR Code Scanner
-
-### Bug Fixes
-
-- Removed **execute config as is** option which caused crashes and confusion for users.
-- Fixed android service revoke and restart.
-- Fixed github release update checker.
-- Fixed translator script. [PR#108](https://github.com/hiddify/hiddify-next/pull/108) by [Hirad Rasoolinejad](https://github.com/Hiiirad)
-- Fixed localization mistakes in Chinese. [PR#113](https://github.com/hiddify/hiddify-next/pull/113) and [PR#123](https://github.com/hiddify/hiddify-next/pull/123) by [Nyar233](https://github.com/Nyar233)
-- Fixed localization mistakes in Chinese Readme. [PR#137](https://github.com/hiddify/hiddify-next/pull/137) by [wldjdjsks](https://github.com/huajizhige)
-- Fixed localization mistakes in Chinese. [PR#138](https://github.com/hiddify/hiddify-next/pull/138) and [PR#165](https://github.com/hiddify/hiddify-next/pull/165) by [wldjdjsks](https://github.com/huajizhige)
-- Fixed localization mistakes in Russian. [PR#155](https://github.com/hiddify/hiddify-next/pull/155), [PR#162](https://github.com/hiddify/hiddify-next/pull/162) and [PR#169](https://github.com/hiddify/hiddify-next/pull/169) by [solokot](https://github.com/solokot)
-- Fixed linux build libs command. [PR#161](https://github.com/hiddify/hiddify-next/pull/161) by [Aloxaf](https://github.com/Aloxaf)
-- Fixed localization mistakes in Russian. [PR#164](https://github.com/hiddify/hiddify-next/pull/164) and [PR#168](https://github.com/hiddify/hiddify-next/pull/168) by [jomertix](https://github.com/jomertix)
-- Fixed localization mistakes in Chinese. [PR#179](https://github.com/hiddify/hiddify-next/pull/179) by [betaxab](https://github.com/betaxab)
-- Fixed localization mistakes in Chinese Readme. [PR#172](https://github.com/hiddify/hiddify-next/pull/172) by [Locas](https://github.com/Locas56227)
-
-## [0.10.0] - 2023-10-27
-
-### New Features and Improvements
-
-- Added Basic region-based routing rules
-  - Based on your selected region (Iran, China or Russia), local ip and domains are bypassed.
-- Redesigned Logs page
-  - Now you're able to pause stream and clear logs. Also logs are delivered more consistently, with less resource consumption.
-- Added tag of selected outbound of selectors to proxies page
-  - Selected outbound tag of selectors like URLTests are now shown in other selectors as well.
-- Added color to delay number in proxies page
-- Memory limit option
-  - Limit sing-box core memory usage.
-- Revamped theme preferences settings
-- Added initial iOS implementation. [PR#98](https://github.com/hiddify/hiddify-next/pull/98) by [GFWFighter](https://github.com/GFWFighter)
-- Added Russian region
-- Added Terms and Conditions and Privacy policy to about page
-
-### Bug Fixes
-
-- Removed reconnection on auto profile updates
-- Fixed filtering logs by level
-- Fixed localization mistakes in Russian. [PR#95](https://github.com/hiddify/hiddify-next/pull/95) by [solokot](https://github.com/solokot)
-- Fixed localization mistakes in Russian. [PR#74](https://github.com/hiddify/hiddify-next/pull/74) by [Elshad Guseynov](https://github.com/lifeindarkside)
-
-[0.16.0.dev]: https://github.com/hiddify/hiddify-next/releases/tag/v0.16.0.dev
-[0.14.1.dev]: https://github.com/hiddify/hiddify-next/releases/tag/v0.14.1.dev
-[0.14.0.dev]: https://github.com/hiddify/hiddify-next/releases/tag/v0.14.0.dev
-[0.13.6]: https://github.com/hiddify/hiddify-next/releases/tag/v0.13.6
-[0.13.5.dev]: https://github.com/hiddify/hiddify-next/releases/tag/v0.13.5.dev
-[0.13.4.dev]: https://github.com/hiddify/hiddify-next/releases/tag/v0.13.4.dev
-[0.13.3.dev]: https://github.com/hiddify/hiddify-next/releases/tag/v0.13.3.dev
-[0.13.2.dev]: https://github.com/hiddify/hiddify-next/releases/tag/v0.13.2.dev
-[0.13.1.dev]: https://github.com/hiddify/hiddify-next/releases/tag/v0.13.1.dev
-[0.13.0.dev]: https://github.com/hiddify/hiddify-next/releases/tag/v0.13.0.dev
-[0.12.3]: https://github.com/hiddify/hiddify-next/releases/tag/v0.12.3
-[0.12.2]: https://github.com/hiddify/hiddify-next/releases/tag/v0.12.2
-[0.12.1]: https://github.com/hiddify/hiddify-next/releases/tag/v0.12.1
-[0.12.0]: https://github.com/hiddify/hiddify-next/releases/tag/v0.12.0
-[0.11.1]: https://github.com/hiddify/hiddify-next/releases/tag/v0.11.1
-[0.11.0]: https://github.com/hiddify/hiddify-next/releases/tag/v0.11.0
-[0.10.0]: https://github.com/hiddify/hiddify-next/releases/tag/v0.10.0
+# История изменений / Changelog
+
+Все значимые изменения в Hiddify Yumash Edition документируются в этом файле.
+
+Формат версии: `{hiddify_base}-yumash-{yumash_version}`
+
+---
+
+## [Unreleased]
+
+### Архитектура / Architecture
+
+- **sing-box выведен из сабмодуля** — код sing-box теперь включён напрямую в репозиторий из-за значительных модификаций ядра. Это позволяет проще отслеживать изменения и упрощает сборку. Оригинальный sing-box не поддерживает многие функции, необходимые для работы с Hiddify Manager (TLS tricks, xray bridging и др.)
+- **sing-box removed from submodule** — sing-box code is now included directly in the repository due to significant core modifications. This makes tracking changes easier and simplifies builds. Original sing-box doesn't support many features required for Hiddify Manager compatibility (TLS tricks, xray bridging, etc.)
+
+### Планы / Roadmap
+
+> **Следующий мажорный релиз:** переход на собственную реализацию xray+singbox функционала на **Rust**. Это обеспечит более стабильную работу, меньший размер бинарников и упрощённую архитектуру без необходимости поддерживать форк sing-box.
+>
+> **Next major release:** migration to custom **Rust** implementation of xray+singbox functionality. This will provide more stable operation, smaller binary size, and simplified architecture without the need to maintain a sing-box fork.
+
+### Добавлено / Added
+
+- **TLS Tricks: Mixed SNI Case** — поддержка рандомизации регистра SNI (`google.com` → `GoOgLe.CoM`) для обхода DPI-блокировок, чувствительных к регистру
+- **Конвертация Hiddify Manager TLS полей** — автоматическое преобразование полей `tls_tricks` и `tls_fragment` из Hiddify Manager в формат sing-box
+- **Сохранение отладочных данных** — сырые ответы от серверов подписок сохраняются в `portable_data/debug/` для диагностики
+- **Консольный вывод отладки** — при запуске из терминала (`hiddify.exe` в cmd/powershell) выводится отладочная информация для диагностики
+- **TLS Tricks: Mixed SNI Case** — support for SNI case randomization (`google.com` → `GoOgLe.CoM`) to bypass case-sensitive DPI blocking
+- **Hiddify Manager TLS fields conversion** — automatic conversion of `tls_tricks` and `tls_fragment` fields from Hiddify Manager to sing-box format
+- **Debug data saving** — raw subscription responses saved to `portable_data/debug/` for troubleshooting
+- **Console debug output** — when running from terminal (`hiddify.exe` in cmd/powershell), debug information is printed for troubleshooting
+
+### Обновлено / Updated
+
+- **Пакеты Flutter** — slang 4.12.0, drift 2.30.1, ffi 2.1.5, watcher 1.2.1, build_runner 2.10.5, sqlparser 0.43.0 и др.
+- **Flutter packages** — slang 4.12.0, drift 2.30.1, ffi 2.1.5, watcher 1.2.1, build_runner 2.10.5, sqlparser 0.43.0, etc.
+
+### Улучшено / Improved
+
+- **Использование xray_outbound_raw** — Hiddify Manager отправляет готовые Xray JSON конфиги в поле `xray_outbound_raw`. Теперь они используются напрямую вместо парсинга ссылок, что обеспечивает 100% совместимость с настройками сервера
+- **xray_outbound_raw support** — Hiddify Manager sends ready Xray JSON configs in `xray_outbound_raw` field. Now used directly instead of link parsing, ensuring 100% compatibility with server settings
+
+### Исправлено / Fixed
+
+- **Статус подключения "Подключение"** — кнопка теперь показывает "Подключено" сразу после установки соединения, даже если пинг ещё не получен (для xray outbounds пинг может приходить позже)
+- **Левая панель статистики** — панель со статистикой подключения теперь отображается на всех экранах шириной >= 600px (раньше только >= 1200px)
+- **Пинг для xray outbounds** — добавлено тестирование подключения через Xray SOCKS порт для outbounds, обрабатываемых Xray-core
+- **Connection status stuck on "Connecting"** — button now shows "Connected" immediately after connection established, even if ping not yet received (for xray outbounds ping may arrive later)
+- **Left stats panel missing** — connection stats panel now displayed on all screens >= 600px width (was >= 1200px before)
+- **Ping for xray outbounds** — added connectivity testing via Xray SOCKS port for outbounds handled by Xray-core
+- **Ошибка парсера Hiddify Manager полей** — Hiddify Manager отправляет нестандартные поля (`tls_tricks`, `tls_fragment`, `fake_packets`), которые sing-box не понимает. Теперь `tls_tricks` и `tls_fragment` конвертируются в формат sing-box, `xray_outbound_raw` и `xray_fragment` используются для Xray-core, `fake_packets` удаляется (не поддерживается)
+- **Parser error for Hiddify Manager fields** — Hiddify Manager sends non-standard fields (`tls_tricks`, `tls_fragment`, `fake_packets`) that sing-box doesn't understand. Now `tls_tricks` and `tls_fragment` are converted to sing-box format, `xray_outbound_raw` and `xray_fragment` are used for Xray-core, `fake_packets` is removed (unsupported)
+- **Race condition при удалении активного профиля** — теперь соединение отключается перед удалением активного профиля, предотвращая "висящие" соединения
+- **Пропуск первого изменения профиля** — исправлена логика listener, которая пропускала первое переключение профиля
+- **Disconnect при ошибке reconnect** — при ошибке переподключения теперь корректно вызывается disconnect для очистки состояния
+- **Hardcoded delay при запуске Xray** — заменён фиксированный 500ms delay на exponential backoff с retry (5 попыток)
+- **Memory leak в watchGroups** — добавлена очистка broadcast streams при остановке sing-box
+- **Race condition при быстром переключении профилей** — добавлен debounce (100ms) и distinct для watchActiveProfile
+- **Profile deletion race condition** — connection is now disconnected before deleting active profile, preventing hanging connections
+- **Missed first profile change** — fixed listener logic that was skipping first profile switch
+- **Disconnect on reconnect error** — reconnect errors now properly call disconnect to clean up state
+- **Hardcoded Xray startup delay** — replaced fixed 500ms delay with exponential backoff retry (5 attempts)
+- **Memory leak in watchGroups** — added broadcast streams cleanup when stopping sing-box
+- **Rapid profile switching race condition** — added debounce (100ms) and distinct for watchActiveProfile
+
+### Добавлено / Added
+
+- **Dual-endpoint для Hiddify Manager** — подписки с Hiddify Manager теперь загружаются через два отдельных endpoint: `/singbox` для sing-box конфига и `/xray` для xray конфига. Это обеспечивает полную совместимость с серверами, использующими xhttp транспорт
+- **Поддержка динамического контента** — корректная обработка серверов, возвращающих `Content-Length: 0` (динамически генерируемый контент)
+- **Hiddify Manager dual-endpoint** — subscriptions from Hiddify Manager now fetch via two separate endpoints: `/singbox` for sing-box config and `/xray` for xray config. This ensures full compatibility with servers using xhttp transport
+- **Dynamic content support** — proper handling of servers returning `Content-Length: 0` (dynamically generated content)
+- **Кэширование rule-set** — фильтры (geosite, geoip, ads) сохраняются локально в `cache.db`
+- **Настройка интервала обновления фильтров** — от 1 до 30 дней (по умолчанию 7 дней)
+- **Кнопка "Обновить фильтры сейчас"** — принудительно перекачать все rule-set
+- **Индикаторы переподключения** — настройки, требующие реконнект, отмечены значком 🔄
+- **Кнопки поддержки провайдера** — если VPN провайдер передаёт `support-url` или `profile-web-page-url` в заголовках подписки, они отображаются как кнопки в карточке профиля
+- **Валидация URL фильтров** — проверка формата URL для rule-set (должны быть HTTP(S) и заканчиваться на .srs)
+- **Кнопка теста серверов** — добавлена в AppBar на странице серверов для быстрого доступа
+- **Rule-set caching** — filters (geosite, geoip, ads) stored locally in `cache.db`
+- **Rule-set update interval setting** — 1 to 30 days (default 7 days)
+- **"Update filters now" button** — force re-download all rule-sets
+- **Reconnect indicators** — settings requiring reconnect marked with 🔄 icon
+- **Provider support buttons** — if VPN provider sends `support-url` or `profile-web-page-url` headers, they appear as buttons in profile card
+- **Rule-set URL validation** — validates URL format (must be HTTP(S) and end with .srs)
+- **Test servers button** — added to AppBar on proxies page for quick access
+
+### Улучшено / Improved
+
+- **Параллельная загрузка dual-endpoint** — `/singbox` и `/xray` endpoints теперь загружаются параллельно через `Future.wait()` для ускорения
+- **Parallel dual-endpoint fetch** — `/singbox` and `/xray` endpoints now fetched in parallel via `Future.wait()` for faster loading
+- **Страница «Прокси»** — мгновенное отображение пустого состояния вместо бесконечного спиннера когда нет активного профиля
+- **Proxies page** — instant empty state display instead of infinite spinner when no active profile
+- **Рефакторинг кода** — удалён весь код geo_asset (~1000 строк), старые схемы БД, неиспользуемые переводы и мёртвый код
+- **Отладочное логирование** — добавлено в пустые catch блоки для облегчения диагностики
+- **Code refactoring** — removed all geo_asset code (~1000 lines), old DB schemas, unused translations and dead code
+- **Debug logging** — added to empty catch blocks for easier diagnostics
+
+### Удалено / Removed
+
+- **Стартовый экран (Intro)** — удалён начальный экран приветствия как неиспользуемый код
+- **Intro screen** — removed welcome/intro screen as unused code
+- **dependency_validator** — dev-утилита удалена из-за конфликта с analyzer (блокировала обновление freezed/riverpod_generator)
+- **dependency_validator** — dev utility removed due to analyzer conflict (was blocking freezed/riverpod_generator updates)
+
+---
+
+## [2.5.7-yumash-1.0.0] — 2026-01-06
+
+Первый релиз Yumash Edition на базе Hiddify 2.5.7.
+
+### Добавлено
+
+**Ядро и архитектура:**
+- Dual-core: sing-box 1.12.14 + Xray-core v25.12.8
+- Поддержка httpupgrade транспорта через Xray (исправлена работа с Hiddify Manager)
+- Индикатор активного ядра на главном экране
+- Умная фильтрация конфигов с автовыбором лучшего сервера
+- Система оценки конфигов по надёжности протокола
+
+**Обход и фильтрация:**
+- Обход российских доменов (geosite-ru) с возможностью указать свой URL
+- Обход российских IP (geoip-ru) с возможностью указать свой URL
+- Блокировка рекламы с возможностью указать свой URL фильтра (.srs)
+- Исключение доменов из VPN (поддержка масок: `*.example.com`)
+- Исключение IP и подсетей из VPN (например: `192.168.0.0/16`)
+- Выбор процессов для обхода VPN из списка запущенных
+
+**WireGuard LAN сервер:**
+- Раздача VPN на мобильные устройства через WireGuard
+- QR-код для быстрого подключения с телефона
+- Автогенерация ключей WireGuard
+- Настраиваемый порт (по умолчанию 51820) и подсеть
+- Автоопределение локального IP адреса в LAN
+
+**Интерфейс и удобство:**
+- Только VPN режим — убраны режимы прокси/системный прокси
+- Portable режим — настройки в `portable_data/` рядом с exe
+- Настраиваемая TUN подсеть (по умолчанию CGNAT `100.64.0.1/28`)
+- Настройка MTU для TUN интерфейса
+- Подсказка для Strict Route о совместимости с VirtualBox
+- Полная русская локализация
+
+**Техническое:**
+- Автофильтрация outbound — профили с неподдерживаемыми типами импортируются успешно
+- Версия из внешнего файла `version.yaml`
+- Xray wrapper модуль для управления подпроцессом
+- UAC манифест — запрос прав администратора при запуске
+- Dockerfile для сборки xray-core.exe
+
+### Удалено
+
+- Платформы: iOS, Android, Linux, macOS (только Windows)
+- Поддержка IPv6
+- Cloudflare WARP (заблокирован в России)
+- Clash API и deep links (`hiddify://`, `sing-box://` — для portable не нужны)
+- Система расширений (вызывала ошибки LevelDB на Windows)
+- Автообновление (portable версия)
+- 18 локалей (оставлены только RU и EN)
+- Мобильный код: haptic feedback, per-app proxy, share_plus
+- gRPC protobuf файлы
+- Тесты и CI/CD workflows
+- `flutter_adaptive_scaffold` — заменён на собственную реализацию NavigationRail
+- `protocol_handler` — deep links не нужны для portable приложения
+- `vclibs` — не использовался в коде
+
+### Изменено
+
+- sing-box обновлён до 1.12.14
+- Riverpod мигрирован на 3.x (убран legacy API)
+- TUN подсеть: `172.19.0.1/28` → `100.64.0.1/28` (CGNAT)
+- Обновлены пакеты: `window_manager` 0.5.1, `tray_manager` 0.5.2, `launch_at_startup` 0.5.1, `toastification` 3.0.3, `wolt_modal_sheet` 0.11.0, `package_info_plus` 9.0.0, `rxdart` 0.28.0, `dio_smart_retry` 7.0.1, `json_path` 0.9.0, `timezone_to_country` 3.1.0, `dependency_validator` 5.0.3, `ffigen` 20.1.1, `drift` 2.30.0
+- Локализация переведена на ручные провайдеры (обход несовместимости riverpod_generator + slang)
+
+### Исправлено
+
+- Ошибки LevelDB на Windows
+- Краши связанные с WARP и расширениями
+- Ошибка импорта «unknown outbound type» — неподдерживаемые outbound отфильтровываются
+- Deprecation warnings для `withOpacity`
+
+---
+
+# Changelog (English)
+
+## [2.5.7-yumash-1.0.0] — 2026-01-06
+
+First release of Yumash Edition based on Hiddify 2.5.7.
+
+### Added
+
+**Core and architecture:**
+- Dual-core: sing-box 1.12.14 + Xray-core v25.12.8
+- httpupgrade transport support via Xray (fixed Hiddify Manager compatibility)
+- Active core indicator on home screen
+- Smart config filtering with automatic best server selection
+- Config scoring system by protocol reliability
+
+**Bypass and filtering:**
+- Bypass Russian domains (geosite-ru) with custom URL support
+- Bypass Russian IPs (geoip-ru) with custom URL support
+- Ad blocking with custom filter URL support (.srs format)
+- Exclude domains from VPN (wildcard support: `*.example.com`)
+- Exclude IPs and subnets from VPN (e.g., `192.168.0.0/16`)
+- Process picker to bypass VPN from running process list
+
+**WireGuard LAN server:**
+- Share VPN with mobile devices via WireGuard
+- QR code for easy mobile scanning
+- Auto-generates WireGuard keys
+- Configurable port (default 51820) and subnet
+- Auto-detects local LAN IP address
+
+**Interface and UX:**
+- VPN mode only — removed proxy/system proxy modes
+- Portable mode — settings in `portable_data/` next to exe
+- Configurable TUN subnet (default CGNAT `100.64.0.1/28`)
+- MTU configuration for TUN interface
+- Strict Route tooltip about VirtualBox compatibility
+- Full Russian localization
+
+**Technical:**
+- Automatic outbound filtering — profiles with unsupported types import successfully
+- Version from external `version.yaml` file
+- Xray wrapper module for subprocess management
+- UAC manifest — admin privileges request on start
+- Dockerfile for building xray-core.exe
+
+### Removed
+
+- `flutter_adaptive_scaffold` — replaced with custom NavigationRail implementation
+- `protocol_handler` — deep links not needed for portable app
+- `vclibs` — not used in code
+- Platforms: iOS, Android, Linux, macOS (Windows only)
+- IPv6 support
+- Cloudflare WARP (blocked in Russia)
+- Clash API and deep links (`hiddify://`, `sing-box://` — not needed for portable)
+- Extension system (caused LevelDB errors on Windows)
+- Auto-update (portable version)
+- 18 locales (kept only RU and EN)
+- Mobile code: haptic feedback, per-app proxy, share_plus
+- gRPC protobuf files
+- Tests and CI/CD workflows
+
+### Changed
+
+- sing-box updated to 1.12.14
+- Riverpod migrated to 3.x (removed legacy API)
+- TUN subnet: `172.19.0.1/28` → `100.64.0.1/28` (CGNAT)
+- Updated packages: `window_manager` 0.5.1, `tray_manager` 0.5.2, `launch_at_startup` 0.5.1, `toastification` 3.0.3, `wolt_modal_sheet` 0.11.0, `package_info_plus` 9.0.0, `rxdart` 0.28.0, `dio_smart_retry` 7.0.1, `json_path` 0.9.0, `timezone_to_country` 3.1.0, `ffigen` 20.1.1, `drift` 2.30.0
+- Localization switched to manual providers (workaround for riverpod_generator + slang incompatibility)
+
+### Fixed
+
+- LevelDB errors on Windows
+- Crashes related to WARP and extensions
+- Import error "unknown outbound type" — unsupported outbounds are filtered
+- Deprecation warnings for `withOpacity`

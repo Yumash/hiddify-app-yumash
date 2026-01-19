@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 const String fallbackObscuredAddress = "*.*.*.*";
 
 String obscureIp(String ip) {
@@ -12,7 +14,8 @@ String obscureIp(String ip) {
         ...splits.sublist(1).map((part) => "*" * part.length),
       ].join(":");
     }
-    // ignore: empty_catches
-  } catch (e) {}
+  } catch (e) {
+    if (kDebugMode) debugPrint('obscureIp: Failed to obscure IP $ip: $e');
+  }
   return fallbackObscuredAddress;
 }

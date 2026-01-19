@@ -1,6 +1,5 @@
 import 'package:drift/drift.dart';
 import 'package:hiddify/core/database/converters/duration_converter.dart';
-import 'package:hiddify/features/geo_asset/model/geo_asset_entity.dart';
 import 'package:hiddify/features/profile/model/profile_entity.dart';
 
 @DataClassName('ProfileEntry')
@@ -22,23 +21,4 @@ class ProfileEntries extends Table {
 
   @override
   Set<Column> get primaryKey => {id};
-}
-
-@DataClassName('GeoAssetEntry')
-class GeoAssetEntries extends Table {
-  TextColumn get id => text()();
-  TextColumn get type => textEnum<GeoAssetType>()();
-  BoolColumn get active => boolean()();
-  TextColumn get name => text().withLength(min: 1)();
-  TextColumn get providerName => text().withLength(min: 1)();
-  TextColumn get version => text().nullable()();
-  DateTimeColumn get lastCheck => dateTime().nullable()();
-
-  @override
-  Set<Column> get primaryKey => {id};
-
-  @override
-  List<Set<Column>> get uniqueKeys => [
-        {name, providerName},
-      ];
 }

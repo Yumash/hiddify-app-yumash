@@ -1,5 +1,4 @@
 import 'package:dartx/dartx.dart';
-import 'package:hiddify/core/preferences/general_preferences.dart';
 import 'package:hiddify/core/preferences/preferences_provider.dart';
 import 'package:hiddify/features/profile/data/profile_data_providers.dart';
 import 'package:hiddify/features/profile/model/profile_entity.dart';
@@ -36,12 +35,8 @@ class ForegroundProfilesUpdateNotifier
       _scheduler = null;
     });
 
-    if (ref.watch(Preferences.introCompleted)) {
-      loggy.debug("intro done, starting");
-      _scheduler?.start();
-    } else {
-      loggy.debug("intro in process, skipping");
-    }
+    loggy.debug("starting profile update scheduler");
+    _scheduler?.start();
     return const Stream.empty();
   }
 

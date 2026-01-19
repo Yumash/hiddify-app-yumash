@@ -1,8 +1,10 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:drift/drift.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:hiddify/core/database/app_database.dart';
 import 'package:hiddify/core/http_client/dio_http_client.dart';
 import 'package:hiddify/core/utils/exception_handler.dart';
@@ -20,6 +22,23 @@ import 'package:hiddify/utils/custom_loggers.dart';
 import 'package:hiddify/utils/link_parsers.dart';
 import 'package:meta/meta.dart';
 import 'package:uuid/uuid.dart';
+
+/// Result of fetching Hiddify Manager subscription
+class HiddifyFetchResult {
+  final String? singboxContent;
+  final String? xrayContent;
+  final Map<String, List<String>> headers;
+
+  HiddifyFetchResult({
+    this.singboxContent,
+    this.xrayContent,
+    required this.headers,
+  });
+
+  bool get isHiddifyManager => singboxContent != null || xrayContent != null;
+  bool get hasSingbox => singboxContent != null;
+  bool get hasXray => xrayContent != null;
+}
 
 abstract interface class ProfileRepository {
   TaskEither<ProfileFailure, Unit> init();
@@ -82,6 +101,29 @@ class ProfileRepositoryImpl with ExceptionHandler, InfraLogger implements Profil
   final ConfigOptionRepository configOptionRepository;
   final DioHttpClient httpClient;
 
+  /// Save debug data to debug folder for troubleshooting
+  Future<void> _saveDebugData(String content, String suffix, {Map<String, List<String>>? headers}) async {
+    try {
+      final debugDir = profilePathResolver.debugDirectory;
+      if (!await debugDir.exists()) {
+        await debugDir.create(recursive: true);
+      }
+
+      final timestamp = DateTime.now().toIso8601String().replaceAll(':', '-').replaceAll('.', '-');
+      final debugFile = profilePathResolver.debugFile('${timestamp}_$suffix.json');
+      await debugFile.writeAsString(content);
+      loggy.debug("Debug data saved to: ${debugFile.path}");
+
+      // Save headers too if provided
+      if (headers != null && headers.isNotEmpty) {
+        final headersFile = profilePathResolver.debugFile('${timestamp}_${suffix}_headers.json');
+        await headersFile.writeAsString(json.encode(headers));
+      }
+    } catch (e) {
+      loggy.warning("Failed to save debug data: $e");
+    }
+  }
+
   @override
   TaskEither<ProfileFailure, Unit> init() {
     return exceptionHandler(
@@ -110,12 +152,19 @@ class ProfileRepositoryImpl with ExceptionHandler, InfraLogger implements Profil
 
   @override
   Stream<Either<ProfileFailure, ProfileEntity?>> watchActiveProfile() {
-    return profileDataSource.watchActiveProfile().map((event) => event?.toEntity()).handleExceptions(
-      (error, stackTrace) {
-        loggy.error("error watching active profile", error, stackTrace);
-        return ProfileUnexpectedFailure(error, stackTrace);
-      },
-    );
+    return profileDataSource
+        .watchActiveProfile()
+        .map((event) => event?.toEntity())
+        // Add debounce to prevent rapid profile switching from causing race conditions
+        .debounceTime(const Duration(milliseconds: 100))
+        // Only emit when profile actually changes
+        .distinct((prev, next) => prev?.id == next?.id)
+        .handleExceptions(
+          (error, stackTrace) {
+            loggy.error("error watching active profile", error, stackTrace);
+            return ProfileUnexpectedFailure(error, stackTrace);
+          },
+        );
   }
 
   @override
@@ -249,7 +298,7 @@ class ProfileRepositoryImpl with ExceptionHandler, InfraLogger implements Profil
     CancelToken? cancelToken,
   }) {
     return exceptionHandler(
-      () async {
+      () {
         return fetch(baseProfile.url, baseProfile.id, cancelToken: cancelToken)
             .flatMap(
               (remoteProfile) => TaskEither(() async {
@@ -297,7 +346,7 @@ class ProfileRepositoryImpl with ExceptionHandler, InfraLogger implements Profil
     CancelToken? cancelToken,
   }) {
     return exceptionHandler(
-      () async {
+      () {
         loggy.debug(
           "updating profile [${baseProfile.name} (${baseProfile.id})]",
         );
@@ -367,7 +416,16 @@ class ProfileRepositoryImpl with ExceptionHandler, InfraLogger implements Profil
     return TaskEither.tryCatch(
       () async {
         await profileDataSource.deleteById(id);
-        await profilePathResolver.file(id).delete();
+        // Delete main config file
+        final mainFile = profilePathResolver.file(id);
+        if (mainFile.existsSync()) {
+          await mainFile.delete();
+        }
+        // Delete xray config file if exists
+        final xrayFile = profilePathResolver.xrayFile(id);
+        if (xrayFile.existsSync()) {
+          await xrayFile.delete();
+        }
         return unit;
       },
       ProfileUnexpectedFailure.new,
@@ -384,6 +442,202 @@ class ProfileRepositoryImpl with ExceptionHandler, InfraLogger implements Profil
     'test-url',
   ];
 
+  /// Try to fetch content from URL with Content-Length check
+  /// Returns null if fetch fails (404, invalid content, etc.)
+  Future<(String content, Map<String, List<String>> headers)?> _tryFetchEndpoint(
+    String url, {
+    CancelToken? cancelToken,
+    String? userAgent,
+  }) async {
+    try {
+      loggy.debug("_tryFetchEndpoint: checking $url");
+
+      // Check Content-Length first
+      final contentLength = await httpClient.checkContentLength(
+        url,
+        cancelToken: cancelToken,
+        userAgent: userAgent,
+      );
+      loggy.debug("_tryFetchEndpoint: Content-Length=$contentLength for $url");
+
+      // Download content
+      final tempFile = File('${profilePathResolver.directory.path}/temp_${DateTime.now().millisecondsSinceEpoch}.tmp');
+      try {
+        final response = await httpClient.downloadSafe(
+          url,
+          tempFile.path,
+          cancelToken: cancelToken,
+          userAgent: userAgent,
+        );
+
+        final content = await tempFile.readAsString();
+        if (content.isEmpty) {
+          loggy.debug("_tryFetchEndpoint: empty content from $url");
+          return null;
+        }
+
+        loggy.debug("_tryFetchEndpoint: got ${content.length} bytes from $url");
+        return (content, response.headers.map);
+      } finally {
+        if (tempFile.existsSync()) {
+          await tempFile.delete();
+        }
+      }
+    } on DioException catch (e) {
+      loggy.debug("_tryFetchEndpoint: DioException for $url: ${e.message}");
+      return null;
+    } catch (e) {
+      loggy.debug("_tryFetchEndpoint: Exception for $url: $e");
+      return null;
+    }
+  }
+
+  /// Check if content is valid sing-box JSON (has outbounds array)
+  bool _isValidSingboxJson(String content) {
+    try {
+      final data = json.decode(content.trim());
+      if (data is Map<String, dynamic>) {
+        final outbounds = data['outbounds'];
+        return outbounds is List && outbounds.isNotEmpty;
+      }
+      return false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Check if content is valid Xray JSON (has outbounds or inbounds)
+  bool _isValidXrayJson(String content) {
+    try {
+      // Xray can return array of configs
+      final data = json.decode(content.trim());
+      if (data is List && data.isNotEmpty) {
+        // Array of xray configs
+        return true;
+      }
+      if (data is Map<String, dynamic>) {
+        final outbounds = data['outbounds'];
+        final inbounds = data['inbounds'];
+        return (outbounds is List && outbounds.isNotEmpty) ||
+            (inbounds is List && inbounds.isNotEmpty);
+      }
+      return false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Try to fetch as Hiddify Manager subscription (dual endpoints)
+  Future<HiddifyFetchResult?> _tryFetchHiddifyManager(
+    String baseUrl, {
+    CancelToken? cancelToken,
+  }) async {
+    // Create a dedicated cancel token for Hiddify Manager detection with shorter timeout
+    final hiddifyCancelToken = CancelToken();
+    
+    // Set timeout for Hiddify Manager detection (2 seconds instead of 15)
+    Future.delayed(const Duration(seconds: 2), () {
+      if (!hiddifyCancelToken.isCancelled) {
+        hiddifyCancelToken.cancel('Hiddify Manager detection timeout');
+        loggy.debug('_tryFetchHiddifyManager: timeout reached, falling back to regular subscription');
+      }
+    });
+    // Normalize URL - remove trailing slash and fragment
+    var normalizedUrl = baseUrl.trim();
+    final fragmentIndex = normalizedUrl.indexOf('#');
+    if (fragmentIndex != -1) {
+      normalizedUrl = normalizedUrl.substring(0, fragmentIndex);
+    }
+    if (normalizedUrl.endsWith('/')) {
+      normalizedUrl = normalizedUrl.substring(0, normalizedUrl.length - 1);
+    }
+
+    final singboxUrl = '$normalizedUrl/singbox';
+    final xrayUrl = '$normalizedUrl/xray';
+
+    loggy.debug("_tryFetchHiddifyManager: trying singbox=$singboxUrl, xray=$xrayUrl");
+
+    String? singboxContent;
+    String? xrayContent;
+    Map<String, List<String>> headers = {};
+    List<String> errors = [];
+
+    // Use specific User-Agents to get clean responses from Hiddify Manager:
+    // - "sing-box/1.12" for /singbox: returns pure sing-box JSON without type:"xray" placeholders
+    // - "Xray/25.12" for /xray: returns full Xray JSON configs including xhttp
+    // Using "HiddifyNext" UA would cause server to add type:"xray" placeholders to /singbox
+    // which our parser doesn't handle correctly (expects "link" field, server sends "xray_outbound_raw")
+    const singboxUserAgent = "sing-box/1.12";
+    const xrayUserAgent = "Xray/25.12";
+
+    // Fetch both endpoints in parallel for better performance
+    final results = await Future.wait([
+      _tryFetchEndpoint(singboxUrl, cancelToken: hiddifyCancelToken, userAgent: singboxUserAgent)
+          .then((result) => ('singbox', result))
+          .catchError((e) {
+        errors.add('singbox: $e');
+        return ('singbox', null);
+      }),
+      _tryFetchEndpoint(xrayUrl, cancelToken: hiddifyCancelToken, userAgent: xrayUserAgent)
+          .then((result) => ('xray', result))
+          .catchError((e) {
+        errors.add('xray: $e');
+        return ('xray', null);
+      }),
+    ]);
+
+    // Process results
+    for (final (type, result) in results) {
+      if (result == null) continue;
+      final (content, respHeaders) = result;
+
+      // Save raw response to debug folder
+      await _saveDebugData(content, 'hiddify_${type}_raw', headers: respHeaders);
+
+      if (type == 'singbox') {
+        if (_isValidSingboxJson(content)) {
+          singboxContent = content;
+          headers = respHeaders;
+          loggy.debug("_tryFetchHiddifyManager: valid sing-box JSON from /singbox (${content.length} bytes)");
+        } else {
+          loggy.debug("_tryFetchHiddifyManager: /singbox returned invalid sing-box JSON");
+          errors.add('singbox: invalid JSON format');
+        }
+      } else if (type == 'xray') {
+        if (_isValidXrayJson(content)) {
+          xrayContent = content;
+          if (headers.isEmpty) {
+            headers = respHeaders;
+          }
+          loggy.debug("_tryFetchHiddifyManager: valid xray JSON from /xray (${content.length} bytes)");
+        } else {
+          loggy.debug("_tryFetchHiddifyManager: /xray returned invalid xray JSON");
+          errors.add('xray: invalid JSON format');
+        }
+      }
+    }
+
+    // If at least one endpoint worked, this is Hiddify Manager
+    if (singboxContent != null || xrayContent != null) {
+      if (errors.isNotEmpty) {
+        loggy.debug("_tryFetchHiddifyManager: partial success, errors: ${errors.join(', ')}");
+      }
+      return HiddifyFetchResult(
+        singboxContent: singboxContent,
+        xrayContent: xrayContent,
+        headers: headers,
+      );
+    }
+
+    if (errors.isNotEmpty) {
+      loggy.debug("_tryFetchHiddifyManager: all endpoints failed: ${errors.join(', ')}");
+    } else {
+      loggy.debug("_tryFetchHiddifyManager: not a Hiddify Manager subscription");
+    }
+    return null;
+  }
+
+  /// Fetch subscription - tries Hiddify Manager first, then falls back to regular subscription
   @visibleForTesting
   TaskEither<ProfileFailure, RemoteProfileEntity> fetch(
     String url,
@@ -394,25 +648,115 @@ class ProfileRepositoryImpl with ExceptionHandler, InfraLogger implements Profil
       () async {
         final file = profilePathResolver.file(fileName);
         final tempFile = profilePathResolver.tempFile(fileName);
+        final xrayFile = profilePathResolver.xrayFile(fileName);
 
         try {
-          final configs = await configOptionRepository.getConfigOptions();
+          loggy.debug("fetch: starting for $url");
 
-          final response = await httpClient.download(
-            url.trim(),
-            tempFile.path,
-            cancelToken: cancelToken,
-            userAgent: configs.useXrayCoreWhenPossible ? "v2rayNG/1.8.23" : null,
-          );
-          final headers = await _populateHeaders(response.headers.map, tempFile.path);
-          return await validateConfig(file.path, tempFile.path, false)
-              .andThen(
-                () => TaskEither(() async {
-                  final profile = ProfileParser.parse(url, headers);
-                  return right(profile);
-                }),
-              )
-              .run();
+          // First try as Hiddify Manager (dual endpoints)
+          final hiddifyResult = await _tryFetchHiddifyManager(url, cancelToken: cancelToken);
+
+          if (hiddifyResult != null && hiddifyResult.isHiddifyManager) {
+            loggy.debug("fetch: detected Hiddify Manager subscription");
+
+            // We need at least one config to proceed
+            if (!hiddifyResult.hasSingbox && !hiddifyResult.hasXray) {
+              return left(const ProfileFailure.unexpected(
+                'Hiddify Manager returned no valid configs',
+                StackTrace.empty,
+              ));
+            }
+
+            // Save sing-box config if available
+            if (hiddifyResult.hasSingbox) {
+              await tempFile.writeAsString(hiddifyResult.singboxContent!);
+              loggy.debug("fetch: saved sing-box config to temp file");
+
+              // Validate sing-box config
+              final validateResult = await validateConfig(file.path, tempFile.path, false).run();
+              if (validateResult.isLeft()) {
+                loggy.warning("fetch: sing-box config validation failed");
+                return left(validateResult.getLeft().toNullable()!);
+              }
+            }
+
+            // Save xray config if available
+            if (hiddifyResult.hasXray) {
+              await xrayFile.writeAsString(hiddifyResult.xrayContent!);
+              loggy.debug("fetch: saved xray config to ${xrayFile.path}");
+
+              // Store xray config info in singbox service for later use
+              singbox.setXrayConfig(xrayFile.path, hiddifyResult.xrayContent!);
+
+              // If no singbox config, try to get it from base URL (v2ray links)
+              if (!hiddifyResult.hasSingbox) {
+                loggy.debug("fetch: no sing-box config from /singbox, trying base URL for v2ray links");
+
+                // Try base URL for v2ray links that ray2sing can convert to sing-box
+                final baseResult = await _tryFetchEndpoint(url, cancelToken: cancelToken);
+                if (baseResult != null) {
+                  final (baseContent, baseHeaders) = baseResult;
+                  await tempFile.writeAsString(baseContent);
+                  loggy.debug("fetch: got ${baseContent.length} bytes from base URL");
+
+                  // Validate - ray2sing will convert v2ray links to sing-box format
+                  final validateResult = await validateConfig(file.path, tempFile.path, false).run();
+                  if (validateResult.isRight()) {
+                    loggy.debug("fetch: base URL content validated successfully");
+                    final headers = await _populateHeaders({...hiddifyResult.headers, ...baseHeaders}, tempFile.path);
+                    final profile = ProfileParser.parse(url, headers);
+                    return right(profile);
+                  } else {
+                    loggy.warning("fetch: base URL content validation failed: ${validateResult.getLeft().toNullable()}");
+                  }
+                }
+
+                // If base URL also failed, return error
+                return left(const ProfileFailure.unexpected(
+                  'Hiddify Manager: /singbox unavailable and base URL invalid',
+                  StackTrace.empty,
+                ));
+              }
+            }
+
+            // Use tempFile path for headers if exists, otherwise use xrayFile
+            final headerPath = tempFile.existsSync() ? tempFile.path : xrayFile.path;
+            final headers = await _populateHeaders(hiddifyResult.headers, headerPath);
+            final profile = ProfileParser.parse(url, headers);
+            return right(profile);
+          }
+
+          // Fallback: try as regular subscription (base64 V2ray links)
+          loggy.debug("fetch: trying as regular subscription");
+
+          final regularResult = await _tryFetchEndpoint(url, cancelToken: cancelToken);
+          if (regularResult == null) {
+            return left(const ProfileFailure.unexpected(
+              'Failed to fetch subscription: no valid content',
+              StackTrace.empty,
+            ));
+          }
+
+          final (content, respHeaders) = regularResult;
+
+          // Save raw response to debug folder
+          await _saveDebugData(content, 'regular_subscription_raw', headers: respHeaders);
+
+          await tempFile.writeAsString(content);
+
+          loggy.debug("fetch: downloaded ${content.length} bytes");
+          loggy.debug("fetch: first 200 chars: ${content.substring(0, content.length > 200 ? 200 : content.length)}");
+
+          // Validate config (parser will handle base64/JSON detection)
+          final validateResult = await validateConfig(file.path, tempFile.path, false).run();
+          if (validateResult.isLeft()) {
+            loggy.warning("fetch: config validation failed: ${validateResult.getLeft().toNullable()}");
+            return left(validateResult.getLeft().toNullable()!);
+          }
+
+          final headers = await _populateHeaders(respHeaders, tempFile.path);
+          final profile = ProfileParser.parse(url, headers);
+          return right(profile);
         } finally {
           if (tempFile.existsSync()) tempFile.deleteSync();
         }

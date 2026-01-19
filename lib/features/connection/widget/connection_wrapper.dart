@@ -19,9 +19,9 @@ class ConnectionWrapper extends StatefulHookConsumerWidget {
 class _ConnectionWrapperState extends ConsumerState<ConnectionWrapper> with AppLogger {
   @override
   Widget build(BuildContext context) {
-    ref.listen(connectionNotifierProvider, (_, __) {});
+    ref.listen(connectionProvider, (_, _) {});
 
-    ref.listen(configOptionNotifierProvider, (previous, next) async {
+    ref.listen(configOptionProvider, (previous, next) async {
       if (next case AsyncData(value: true)) {
         final t = ref.read(translationsProvider);
         ref.watch(inAppNotificationControllerProvider).showInfoToast(
@@ -29,11 +29,11 @@ class _ConnectionWrapperState extends ConsumerState<ConnectionWrapper> with AppL
               // actionText: t.connection.reconnect,
               // callback: () async {
               //   await ref
-              //       .read(connectionNotifierProvider.notifier)
+              //       .read(connectionProvider.notifier)
               //       .reconnect(await ref.read(activeProfileProvider.future));
               // },
             );
-        await ref.read(connectionNotifierProvider.notifier).reconnect(await ref.read(activeProfileProvider.future));
+        await ref.read(connectionProvider.notifier).reconnect(await ref.read(activeProfileProvider.future));
       }
     });
 
@@ -49,7 +49,7 @@ class _ConnectionWrapperState extends ConsumerState<ConnectionWrapper> with AppL
     //   (_) async {
     //     if (ref.read(startedByUserProvider) && PlatformUtils.isDesktop) {
     //       loggy.debug("previously started by user, trying to connect");
-    //       return ref.read(connectionNotifierProvider.notifier).mayConnect();
+    //       return ref.read(connectionProvider.notifier).mayConnect();
     //     }
     //   },
     // );

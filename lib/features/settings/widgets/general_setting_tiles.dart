@@ -1,8 +1,5 @@
-import 'dart:io';
-
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
-import 'package:hiddify/core/haptic/haptic_service.dart';
 import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/preferences/general_preferences.dart';
 import 'package:hiddify/features/auto_start/notifier/auto_start_notifier.dart';
@@ -21,39 +18,22 @@ class GeneralSettingTiles extends HookConsumerWidget {
       children: [
         const LocalePrefTile(),
         const ThemeModePrefTile(),
-        const EnableAnalyticsPrefTile(),
         SwitchListTile(
           title: Text(t.settings.general.autoIpCheck),
           secondary: const Icon(FluentIcons.globe_search_24_regular),
           value: ref.watch(Preferences.autoCheckIp),
           onChanged: ref.read(Preferences.autoCheckIp.notifier).update,
         ),
-        if (Platform.isAndroid) ...[
-          SwitchListTile(
-            title: Text(t.settings.general.dynamicNotification),
-            secondary: const Icon(FluentIcons.top_speed_24_regular),
-            value: ref.watch(Preferences.dynamicNotification),
-            onChanged: (value) async {
-              await ref.read(Preferences.dynamicNotification.notifier).update(value);
-            },
-          ),
-          SwitchListTile(
-            title: Text(t.settings.general.hapticFeedback),
-            secondary: const Icon(FluentIcons.phone_vibrate_24_regular),
-            value: ref.watch(hapticServiceProvider),
-            onChanged: ref.read(hapticServiceProvider.notifier).updatePreference,
-          ),
-        ],
         if (PlatformUtils.isDesktop) ...[
           const ClosingPrefTile(),
           SwitchListTile(
             title: Text(t.settings.general.autoStart),
-            value: ref.watch(autoStartNotifierProvider).asData!.value,
+            value: ref.watch(autoStartProvider).asData!.value,
             onChanged: (value) async {
               if (value) {
-                await ref.read(autoStartNotifierProvider.notifier).enable();
+                await ref.read(autoStartProvider.notifier).enable();
               } else {
-                await ref.read(autoStartNotifierProvider.notifier).disable();
+                await ref.read(autoStartProvider.notifier).disable();
               }
             },
           ),

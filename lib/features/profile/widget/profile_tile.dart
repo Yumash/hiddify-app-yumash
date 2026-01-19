@@ -18,6 +18,7 @@ import 'package:hiddify/gen/fonts.gen.dart';
 import 'package:hiddify/utils/utils.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:percent_indicator/percent_indicator.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ProfileTile extends HookConsumerWidget {
   const ProfileTile({
@@ -96,7 +97,7 @@ class ProfileTile extends HookConsumerWidget {
                       if (selectActiveMutation.state.isInProgress) return;
                       if (profile.active) return;
                       selectActiveMutation.setFuture(
-                        ref.read(profilesOverviewNotifierProvider.notifier).selectActiveProfile(profile.id),
+                        ref.read(profilesOverviewProvider.notifier).selectActiveProfile(profile.id),
                       );
                     }
                   },
@@ -286,24 +287,18 @@ class ProfileActionsMenu extends HookConsumerWidget {
           ],
           AdaptiveMenuItem(
             title: t.profile.share.exportConfigToClipboard,
-            onTap: () async {
+            onTap: () {
               if (exportConfigMutation.state.isInProgress) {
                 return;
               }
               exportConfigMutation.setFuture(
-                ref.read(profilesOverviewNotifierProvider.notifier).exportConfigToClipboard(profile),
+                ref.read(profilesOverviewProvider.notifier).exportConfigToClipboard(profile),
               );
             },
           ),
         ],
       ),
-      AdaptiveMenuItem(
-        icon: FluentIcons.edit_24_regular,
-        title: t.profile.edit.buttonTxt,
-        onTap: () async {
-          await ProfileDetailsRoute(profile.id).push(context);
-        },
-      ),
+      // Edit functionality removed - users should re-add profiles
       AdaptiveMenuItem(
         icon: FluentIcons.delete_24_regular,
         title: t.profile.delete.buttonTxt,
@@ -319,7 +314,7 @@ class ProfileActionsMenu extends HookConsumerWidget {
           );
           if (deleteConfirmed) {
             deleteProfileMutation.setFuture(
-              ref.read(profilesOverviewNotifierProvider.notifier).deleteProfile(profile),
+              ref.read(profilesOverviewProvider.notifier).deleteProfile(profile),
             );
           }
         },
@@ -334,7 +329,6 @@ class ProfileActionsMenu extends HookConsumerWidget {
   }
 }
 
-// TODO add support url
 class ProfileSubscriptionInfo extends HookConsumerWidget {
   const ProfileSubscriptionInfo(this.subInfo, {super.key});
 
@@ -361,38 +355,118 @@ class ProfileSubscriptionInfo extends HookConsumerWidget {
     final theme = Theme.of(context);
 
     final remaining = remainingText(t, theme);
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    final hasLinks = subInfo.supportUrl != null || subInfo.webPageUrl != null;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Directionality(
-          textDirection: TextDirection.ltr,
-          child: Flexible(
-            child: Text(
-              subInfo.total > 10 * 1099511627776 //10TB
-                  ? "∞ GiB"
-                  : subInfo.consumption.sizeOf(subInfo.total),
-              semanticsLabel: t.profile.subscription.remainingTrafficSemanticLabel(
-                consumed: subInfo.consumption.sizeGB(),
-                total: subInfo.total.sizeGB(),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Directionality(
+              textDirection: TextDirection.ltr,
+              child: Flexible(
+                child: Text(
+                  subInfo.total > 10 * 1099511627776 //10TB
+                      ? "∞ GiB"
+                      : subInfo.consumption.sizeOf(subInfo.total),
+                  semanticsLabel: t.profile.subscription.remainingTrafficSemanticLabel(
+                    consumed: subInfo.consumption.sizeGB(),
+                    total: subInfo.total.sizeGB(),
+                  ),
+                  style: theme.textTheme.bodySmall,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-              style: theme.textTheme.bodySmall,
-              overflow: TextOverflow.ellipsis,
             ),
-          ),
+            Flexible(
+              child: Text(
+                remaining.$1,
+                style: theme.textTheme.bodySmall?.copyWith(color: remaining.$2),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
         ),
-        Flexible(
-          child: Text(
-            remaining.$1,
-            style: theme.textTheme.bodySmall?.copyWith(color: remaining.$2),
-            overflow: TextOverflow.ellipsis,
+        if (hasLinks) ...[
+          const Gap(4),
+          Row(
+            children: [
+              if (subInfo.supportUrl case final url?)
+                _SubscriptionLinkChip(
+                  label: t.profile.subscription.support,
+                  icon: FluentIcons.person_support_16_regular,
+                  url: url,
+                ),
+              if (subInfo.supportUrl != null && subInfo.webPageUrl != null)
+                const Gap(8),
+              if (subInfo.webPageUrl case final url?)
+                _SubscriptionLinkChip(
+                  label: t.profile.subscription.webPage,
+                  icon: FluentIcons.globe_16_regular,
+                  url: url,
+                ),
+            ],
           ),
-        ),
+        ],
       ],
     );
   }
 }
 
-// TODO change colors
+class _SubscriptionLinkChip extends StatelessWidget {
+  const _SubscriptionLinkChip({
+    required this.label,
+    required this.icon,
+    required this.url,
+  });
+
+  final String label;
+  final IconData icon;
+  final String url;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return InkWell(
+      onTap: () async {
+        final uri = Uri.tryParse(url);
+        if (uri != null) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        }
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: theme.colorScheme.outline.withValues(alpha: 0.5),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 12,
+              color: theme.colorScheme.primary,
+            ),
+            const Gap(4),
+            Text(
+              label,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class RemainingTrafficIndicator extends StatelessWidget {
   const RemainingTrafficIndicator(this.ratio, {super.key});
 

@@ -30,7 +30,7 @@ class ProfileDetailsPage extends HookConsumerWidget with PresLogger {
   Widget build(BuildContext context, WidgetRef ref) {
     final t = ref.watch(translationsProvider);
 
-    final provider = profileDetailsNotifierProvider(id);
+    final provider = profileDetailsProvider(id);
     final notifier = ref.watch(provider.notifier);
 
     ref.listen(
@@ -52,6 +52,8 @@ class ProfileDetailsPage extends HookConsumerWidget with PresLogger {
               action = t.profile.add.failureMsg;
             }
             CustomAlertDialog.fromErr(t.presentError(error, action: action)).show(context);
+          case _:
+            break;
         }
       },
     );
@@ -64,6 +66,8 @@ class ProfileDetailsPage extends HookConsumerWidget with PresLogger {
             CustomToast.success(t.profile.update.successMsg).show(context);
           case AsyncError(:final error):
             CustomAlertDialog.fromErr(t.presentError(error)).show(context);
+          case _:
+            break;
         }
       },
     );
@@ -81,6 +85,8 @@ class ProfileDetailsPage extends HookConsumerWidget with PresLogger {
             );
           case AsyncError(:final error):
             CustomToast.error(t.presentShortError(error)).show(context);
+          case _:
+            break;
         }
       },
     );
@@ -279,7 +285,7 @@ class ProfileDetailsPage extends HookConsumerWidget with PresLogger {
                                 expandedObjects: const ["outbounds"],
                                 onChanged: (value) {
                                   if (value == null) return;
-                                  const encoder = const JsonEncoder.withIndent('  ');
+                                  const encoder = JsonEncoder.withIndent('  ');
 
                                   notifier.setField(configContent: encoder.convert(value));
                                 },

@@ -3,16 +3,16 @@ import 'dart:convert';
 import 'dart:ffi';
 import 'dart:io';
 import 'dart:isolate';
-import 'package:combine/combine.dart';
 import 'package:ffi/ffi.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:hiddify/core/model/directories.dart';
 import 'package:hiddify/gen/singbox_generated_bindings.dart';
+import 'package:hiddify/singbox/model/running_process.dart';
 import 'package:hiddify/singbox/model/singbox_config_option.dart';
 import 'package:hiddify/singbox/model/singbox_outbound.dart';
 import 'package:hiddify/singbox/model/singbox_stats.dart';
 import 'package:hiddify/singbox/model/singbox_status.dart';
-import 'package:hiddify/singbox/model/warp_account.dart';
+import 'package:hiddify/singbox/model/wireguard_keys.dart';
 import 'package:hiddify/singbox/service/singbox_service.dart';
 import 'package:hiddify/utils/utils.dart';
 import 'package:loggy/loggy.dart';
@@ -31,17 +31,12 @@ class FFISingboxService with InfraLogger implements SingboxService {
   Stream<List<SingboxOutboundGroup>>? _outboundsStream;
 
   static SingboxNativeLibrary _gen() {
+    // Windows only - load libcore.dll
     String fullPath = "";
     if (Platform.environment.containsKey('FLUTTER_TEST')) {
       fullPath = "libcore";
     }
-    if (Platform.isWindows) {
-      fullPath = p.join(fullPath, "libcore.dll");
-    } else if (Platform.isMacOS) {
-      fullPath = p.join(fullPath, "libcore.dylib");
-    } else {
-      fullPath = p.join(fullPath, "libcore.so");
-    }
+    fullPath = p.join(fullPath, "libcore.dll");
     _logger.debug('singbox native libs path: "$fullPath"');
     final lib = DynamicLibrary.open(fullPath);
     return SingboxNativeLibrary(lib);
@@ -65,25 +60,23 @@ class FFISingboxService with InfraLogger implements SingboxService {
   ) {
     final port = _statusReceiver.sendPort.nativePort;
     return TaskEither(
-      () => CombineWorker().execute(
-        () {
-          _box.setupOnce(NativeApi.initializeApiDLData);
-          final err = _box
-              .setup(
-                directories.baseDir.path.toNativeUtf8().cast(),
-                directories.workingDir.path.toNativeUtf8().cast(),
-                directories.tempDir.path.toNativeUtf8().cast(),
-                port,
-                debug ? 1 : 0,
-              )
-              .cast<Utf8>()
-              .toDartString();
-          if (err.isNotEmpty) {
-            return left(err);
-          }
-          return right(unit);
-        },
-      ),
+      () async {
+        _box.setupOnce(NativeApi.initializeApiDLData);
+        final err = _box
+            .setup(
+              directories.baseDir.path.toNativeUtf8().cast(),
+              directories.workingDir.path.toNativeUtf8().cast(),
+              directories.tempDir.path.toNativeUtf8().cast(),
+              port,
+              debug ? 1 : 0,
+            )
+            .cast<Utf8>()
+            .toDartString();
+        if (err.isNotEmpty) {
+          return left(err);
+        }
+        return right(unit);
+      },
     );
   }
 
@@ -94,38 +87,34 @@ class FFISingboxService with InfraLogger implements SingboxService {
     bool debug,
   ) {
     return TaskEither(
-      () => CombineWorker().execute(
-        () {
-          final err = _box
-              .parse(
-                path.toNativeUtf8().cast(),
-                tempPath.toNativeUtf8().cast(),
-                debug ? 1 : 0,
-              )
-              .cast<Utf8>()
-              .toDartString();
-          if (err.isNotEmpty) {
-            return left(err);
-          }
-          return right(unit);
-        },
-      ),
+      () async {
+        final err = _box
+            .parse(
+              path.toNativeUtf8().cast(),
+              tempPath.toNativeUtf8().cast(),
+              debug ? 1 : 0,
+            )
+            .cast<Utf8>()
+            .toDartString();
+        if (err.isNotEmpty) {
+          return left(err);
+        }
+        return right(unit);
+      },
     );
   }
 
   @override
   TaskEither<String, Unit> changeOptions(SingboxConfigOption options) {
     return TaskEither(
-      () => CombineWorker().execute(
-        () {
-          final json = jsonEncode(options.toJson());
-          final err = _box.changeHiddifyOptions(json.toNativeUtf8().cast()).cast<Utf8>().toDartString();
-          if (err.isNotEmpty) {
-            return left(err);
-          }
-          return right(unit);
-        },
-      ),
+      () async {
+        final json = jsonEncode(options.toJson());
+        final err = _box.changeHiddifyOptions(json.toNativeUtf8().cast()).cast<Utf8>().toDartString();
+        if (err.isNotEmpty) {
+          return left(err);
+        }
+        return right(unit);
+      },
     );
   }
 
@@ -134,20 +123,18 @@ class FFISingboxService with InfraLogger implements SingboxService {
     String path,
   ) {
     return TaskEither(
-      () => CombineWorker().execute(
-        () {
-          final response = _box
-              .generateConfig(
-                path.toNativeUtf8().cast(),
-              )
-              .cast<Utf8>()
-              .toDartString();
-          if (response.startsWith("error")) {
-            return left(response.replaceFirst("error", ""));
-          }
-          return right(response);
-        },
-      ),
+      () async {
+        final response = _box
+            .generateConfig(
+              path.toNativeUtf8().cast(),
+            )
+            .cast<Utf8>()
+            .toDartString();
+        if (response.startsWith("error")) {
+          return left(response.replaceFirst("error", ""));
+        }
+        return right(response);
+      },
     );
   }
 
@@ -159,37 +146,52 @@ class FFISingboxService with InfraLogger implements SingboxService {
   ) {
     loggy.debug("starting, memory limit: [${!disableMemoryLimit}]");
     return TaskEither(
-      () => CombineWorker().execute(
-        () {
-          final err = _box
-              .start(
-                configPath.toNativeUtf8().cast(),
-                disableMemoryLimit ? 1 : 0,
-              )
-              .cast<Utf8>()
-              .toDartString();
-          if (err.isNotEmpty) {
-            return left(err);
-          }
-          return right(unit);
-        },
-      ),
+      () async {
+        final err = _box
+            .start(
+              configPath.toNativeUtf8().cast(),
+              disableMemoryLimit ? 1 : 0,
+            )
+            .cast<Utf8>()
+            .toDartString();
+        if (err.isNotEmpty) {
+          return left(err);
+        }
+        return right(unit);
+      },
     );
   }
 
   @override
   TaskEither<String, Unit> stop() {
     return TaskEither(
-      () => CombineWorker().execute(
-        () {
-          final err = _box.stop().cast<Utf8>().toDartString();
-          if (err.isNotEmpty) {
-            return left(err);
-          }
-          return right(unit);
-        },
-      ),
+      () async {
+        // Clean up streams to prevent memory leaks
+        _cleanupStreams();
+
+        final err = _box.stop().cast<Utf8>().toDartString();
+        if (err.isNotEmpty) {
+          return left(err);
+        }
+        return right(unit);
+      },
     );
+  }
+
+  /// Clean up cached broadcast streams to release resources
+  void _cleanupStreams() {
+    if (_serviceStatsStream != null) {
+      _logger.debug("cleaning up stats stream");
+      // Stop the command client for stats (command type 1)
+      _box.stopCommandClient(1).cast<Utf8>().toDartString();
+      _serviceStatsStream = null;
+    }
+    if (_outboundsStream != null) {
+      _logger.debug("cleaning up outbounds stream");
+      // Stop the command client for groups (command type 5)
+      _box.stopCommandClient(5).cast<Utf8>().toDartString();
+      _outboundsStream = null;
+    }
   }
 
   @override
@@ -200,21 +202,19 @@ class FFISingboxService with InfraLogger implements SingboxService {
   ) {
     loggy.debug("restarting, memory limit: [${!disableMemoryLimit}]");
     return TaskEither(
-      () => CombineWorker().execute(
-        () {
-          final err = _box
-              .restart(
-                configPath.toNativeUtf8().cast(),
-                disableMemoryLimit ? 1 : 0,
-              )
-              .cast<Utf8>()
-              .toDartString();
-          if (err.isNotEmpty) {
-            return left(err);
-          }
-          return right(unit);
-        },
-      ),
+      () async {
+        final err = _box
+            .restart(
+              configPath.toNativeUtf8().cast(),
+              disableMemoryLimit ? 1 : 0,
+            )
+            .cast<Utf8>()
+            .toDartString();
+        if (err.isNotEmpty) {
+          return left(err);
+        }
+        return right(unit);
+      },
     );
   }
 
@@ -360,36 +360,32 @@ class FFISingboxService with InfraLogger implements SingboxService {
   @override
   TaskEither<String, Unit> selectOutbound(String groupTag, String outboundTag) {
     return TaskEither(
-      () => CombineWorker().execute(
-        () {
-          final err = _box
-              .selectOutbound(
-                groupTag.toNativeUtf8().cast(),
-                outboundTag.toNativeUtf8().cast(),
-              )
-              .cast<Utf8>()
-              .toDartString();
-          if (err.isNotEmpty) {
-            return left(err);
-          }
-          return right(unit);
-        },
-      ),
+      () async {
+        final err = _box
+            .selectOutbound(
+              groupTag.toNativeUtf8().cast(),
+              outboundTag.toNativeUtf8().cast(),
+            )
+            .cast<Utf8>()
+            .toDartString();
+        if (err.isNotEmpty) {
+          return left(err);
+        }
+        return right(unit);
+      },
     );
   }
 
   @override
   TaskEither<String, Unit> urlTest(String groupTag) {
     return TaskEither(
-      () => CombineWorker().execute(
-        () {
-          final err = _box.urlTest(groupTag.toNativeUtf8().cast()).cast<Utf8>().toDartString();
-          if (err.isNotEmpty) {
-            return left(err);
-          }
-          return right(unit);
-        },
-      ),
+      () async {
+        final err = _box.urlTest(groupTag.toNativeUtf8().cast()).cast<Utf8>().toDartString();
+        if (err.isNotEmpty) {
+          return left(err);
+        }
+        return right(unit);
+      },
     );
   }
 
@@ -398,10 +394,15 @@ class FFISingboxService with InfraLogger implements SingboxService {
 
   @override
   Stream<List<String>> watchLogs(String path) async* {
-    yield await _readLogFile(File(path));
+    final file = File(path);
+    // Ensure log file exists (create empty if not)
+    if (!await file.exists()) {
+      await file.create(recursive: true);
+    }
+    yield await _readLogFile(file);
     yield* Watcher(path, pollingDelay: const Duration(seconds: 1)).events.asyncMap((event) async {
       if (event.type == ChangeType.MODIFY) {
-        await _readLogFile(File(path));
+        await _readLogFile(file);
       }
       return _logBuffer;
     });
@@ -410,12 +411,10 @@ class FFISingboxService with InfraLogger implements SingboxService {
   @override
   TaskEither<String, Unit> clearLogs() {
     return TaskEither(
-      () => CombineWorker().execute(
-        () {
-          _logBuffer.clear();
-          return right(unit);
-        },
-      ),
+      () async {
+        _logBuffer.clear();
+        return right(unit);
+      },
     );
   }
 
@@ -437,29 +436,175 @@ class FFISingboxService with InfraLogger implements SingboxService {
   }
 
   @override
-  TaskEither<String, WarpResponse> generateWarpConfig({
-    required String licenseKey,
-    required String previousAccountId,
-    required String previousAccessToken,
-  }) {
-    loggy.debug("generating warp config");
+  TaskEither<String, List<RunningProcess>> listRunningProcesses() {
     return TaskEither(
-      () => CombineWorker().execute(
-        () {
-          final response = _box
-              .generateWarpConfig(
-                licenseKey.toNativeUtf8().cast(),
-                previousAccountId.toNativeUtf8().cast(),
-                previousAccessToken.toNativeUtf8().cast(),
-              )
-              .cast<Utf8>()
-              .toDartString();
-          if (response.startsWith("error:")) {
-            return left(response.replaceFirst('error:', ""));
-          }
-          return right(warpFromJson(jsonDecode(response)));
-        },
-      ),
+      () async {
+        final response = _box.listRunningProcesses().cast<Utf8>().toDartString();
+        final json = jsonDecode(response);
+        if (json is Map && json.containsKey('error')) {
+          return left(json['error'] as String);
+        }
+        final processes = (json as List)
+            .map((e) => RunningProcess.fromJson(e as Map<String, dynamic>))
+            .toList();
+        return right(processes);
+      },
     );
   }
+
+  @override
+  TaskEither<String, WireGuardKeys> generateWireGuardKeys() {
+    return TaskEither(
+      () async {
+        final response = _box.generateWireGuardKeys().cast<Utf8>().toDartString();
+        final json = jsonDecode(response) as Map<String, dynamic>;
+        if (json.containsKey('error') && json['error'] != null && (json['error'] as String).isNotEmpty) {
+          return left(json['error'] as String);
+        }
+        return right(WireGuardKeys.fromJson(json));
+      },
+    );
+  }
+
+  @override
+  TaskEither<String, LanIPInfo> getLocalLanIP() {
+    return TaskEither(
+      () async {
+        final response = _box.getLocalLanIP().cast<Utf8>().toDartString();
+        final json = jsonDecode(response) as Map<String, dynamic>;
+        if (json.containsKey('error') && json['error'] != null && (json['error'] as String).isNotEmpty) {
+          return left(json['error'] as String);
+        }
+        return right(LanIPInfo.fromJson(json));
+      },
+    );
+  }
+
+  // Xray integration methods
+
+  @override
+  bool hasXrayLinks() {
+    try {
+      return _box.hasXrayLinks();
+    } catch (e) {
+      _logger.error('hasXrayLinks error: $e');
+      return false;
+    }
+  }
+
+  @override
+  TaskEither<String, XrayLinksInfo> getXrayLinks() {
+    return TaskEither(
+      () async {
+        final response = _box.getXrayLinks().cast<Utf8>().toDartString();
+        final json = jsonDecode(response) as Map<String, dynamic>;
+        if (json.containsKey('error') && json['error'] != null && (json['error'] as String).isNotEmpty) {
+          return left(json['error'] as String);
+        }
+        return right(XrayLinksInfo.fromJson(json));
+      },
+    );
+  }
+
+  @override
+  TaskEither<String, XrayStartResult> startXrayForLink(int linkIndex) {
+    return TaskEither(
+      () async {
+        final response = _box.startXrayForLink(linkIndex).cast<Utf8>().toDartString();
+        final json = jsonDecode(response) as Map<String, dynamic>;
+        if (json.containsKey('error') && json['error'] != null && (json['error'] as String).isNotEmpty) {
+          return left(json['error'] as String);
+        }
+        return right(XrayStartResult.fromJson(json));
+      },
+    );
+  }
+
+  @override
+  TaskEither<String, Unit> stopXray() {
+    return TaskEither(
+      () async {
+        final err = _box.stopXray().cast<Utf8>().toDartString();
+        if (err.isNotEmpty) {
+          return left(err);
+        }
+        return right(unit);
+      },
+    );
+  }
+
+  @override
+  bool isXrayRunning() {
+    try {
+      return _box.isXrayRunning();
+    } catch (e) {
+      _logger.error('isXrayRunning error: $e');
+      return false;
+    }
+  }
+
+  @override
+  TaskEither<String, XrayCoreInfo> getXrayCoreInfo() {
+    return TaskEither(
+      () async {
+        final response = _box.getXrayCoreInfo().cast<Utf8>().toDartString();
+        final json = jsonDecode(response) as Map<String, dynamic>;
+        if (json.containsKey('error') && json['error'] != null && (json['error'] as String).isNotEmpty) {
+          return left(json['error'] as String);
+        }
+        return right(XrayCoreInfo.fromJson(json));
+      },
+    );
+  }
+
+  @override
+  bool isXrayOutbound(String tag) {
+    try {
+      return _box.isXrayOutbound(tag.toNativeUtf8().cast());
+    } catch (e) {
+      _logger.error('isXrayOutbound error: $e');
+      return false;
+    }
+  }
+
+  @override
+  TaskEither<String, XrayByTagResult> startXrayByTag(String tag) {
+    return TaskEither(
+      () async {
+        final response = _box.startXrayByTag(tag.toNativeUtf8().cast()).cast<Utf8>().toDartString();
+        final json = jsonDecode(response) as Map<String, dynamic>;
+        if (json.containsKey('error') && json['error'] != null && (json['error'] as String).isNotEmpty) {
+          return left(json['error'] as String);
+        }
+        return right(XrayByTagResult.fromJson(json));
+      },
+    );
+  }
+
+  // Xray config storage for Hiddify Manager subscriptions
+  String? _xrayConfigPath;
+  String? _xrayConfigContent;
+
+  @override
+  void setXrayConfig(String path, String content) {
+    _xrayConfigPath = path;
+    _xrayConfigContent = content;
+    _logger.debug('Stored Xray config: $path (${content.length} bytes)');
+
+    // Also pass to native code for xray core to use
+    try {
+      final err = _box
+          .setXrayConfigJson(content.toNativeUtf8().cast())
+          .cast<Utf8>()
+          .toDartString();
+      if (err.isNotEmpty) {
+        _logger.warning('setXrayConfigJson error: $err');
+      }
+    } catch (e) {
+      _logger.warning('setXrayConfigJson exception: $e');
+    }
+  }
+
+  @override
+  String? getXrayConfigPath() => _xrayConfigPath;
 }

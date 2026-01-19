@@ -133,7 +133,7 @@ class AdaptiveMenu extends HookConsumerWidget {
               hasTopBarLayer: false,
               isTopBarLayerAlwaysVisible: true,
               topBarTitle: Text(item.title),
-              mainContentSlivers: [
+              mainContentSliversBuilder: (context) => [
                 SliverList.list(children: subItems),
               ],
             ),
@@ -167,7 +167,7 @@ class AdaptiveMenu extends HookConsumerWidget {
           pageListBuilder: (context) => [
             SliverWoltModalSheetPage(
               hasTopBarLayer: false,
-              mainContentSlivers: [
+              mainContentSliversBuilder: (context) => [
                 SliverList.list(children: buildSheetItems(items, 0)),
               ],
             ),

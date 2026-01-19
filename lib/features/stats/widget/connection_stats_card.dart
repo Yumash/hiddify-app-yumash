@@ -16,8 +16,8 @@ class ConnectionStatsCard extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final t = ref.watch(translationsProvider);
 
-    final activeProxy = ref.watch(activeProxyNotifierProvider);
-    final ipInfo = ref.watch(ipInfoNotifierProvider);
+    final activeProxy = ref.watch(activeProxyProvider);
+    final ipInfo = ref.watch(ipInfoProvider);
 
     return StatsCard(
       title: t.stats.connection,
@@ -46,8 +46,8 @@ class ConnectionStatsCard extends HookConsumerWidget {
               ),
               data: IPText(
                 ip: info.ip,
-                onLongPress: () async {
-                  ref.read(ipInfoNotifierProvider.notifier).refresh();
+                onLongPress: () {
+                  ref.read(ipInfoProvider.notifier).refresh();
                 },
                 constrained: true,
               ),
@@ -62,8 +62,8 @@ class ConnectionStatsCard extends HookConsumerWidget {
               label: const Icon(FluentIcons.arrow_sync_20_regular),
               data: UnknownIPText(
                 text: t.proxies.checkIp,
-                onTap: () async {
-                  ref.read(ipInfoNotifierProvider.notifier).refresh();
+                onTap: () {
+                  ref.read(ipInfoProvider.notifier).refresh();
                 },
                 constrained: true,
               ),
@@ -73,8 +73,8 @@ class ConnectionStatsCard extends HookConsumerWidget {
               label: const Icon(FluentIcons.error_circle_20_regular),
               data: UnknownIPText(
                 text: t.proxies.unknownIp,
-                onTap: () async {
-                  ref.read(ipInfoNotifierProvider.notifier).refresh();
+                onTap: () {
+                  ref.read(ipInfoProvider.notifier).refresh();
                 },
                 constrained: true,
               ),

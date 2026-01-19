@@ -21,10 +21,10 @@ class LogsOverviewPage extends HookConsumerWidget with PresLogger {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = ref.watch(translationsProvider);
-    final state = ref.watch(logsOverviewNotifierProvider);
-    final notifier = ref.watch(logsOverviewNotifierProvider.notifier);
+    final state = ref.watch(logsOverviewProvider);
+    final notifier = ref.watch(logsOverviewProvider.notifier);
 
-    final debug = ref.watch(debugModeNotifierProvider);
+    final debug = ref.watch(debugModeProvider);
     final pathResolver = ref.watch(logPathResolverProvider);
 
     final filterController = useTextEditingController(text: state.filter);
@@ -96,7 +96,7 @@ class LogsOverviewPage extends HookConsumerWidget with PresLogger {
                   SliverPinnedHeader(
                     child: DecoratedBox(
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.background,
+                        color: Theme.of(context).colorScheme.surface,
                       ),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(

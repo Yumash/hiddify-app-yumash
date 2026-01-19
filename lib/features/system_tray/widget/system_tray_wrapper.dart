@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:hiddify/features/system_tray/notifier/system_tray_notifier.dart';
 import 'package:hiddify/features/window/notifier/window_notifier.dart';
@@ -20,7 +18,7 @@ class _TrayWrapperState extends ConsumerState<TrayWrapper>
     with TrayListener, AppLogger {
   @override
   Widget build(BuildContext context) {
-    ref.listen(systemTrayNotifierProvider, (_, __) {});
+    ref.listen(systemTrayProvider, (_, _) {});
 
     return widget.child;
   }
@@ -39,15 +37,13 @@ class _TrayWrapperState extends ConsumerState<TrayWrapper>
 
   @override
   Future<void> onTrayIconMouseDown() async {
-    if (Platform.isMacOS) {
-      await trayManager.popUpContextMenu();
-    } else {
-      await ref.read(windowNotifierProvider.notifier).open();
-    }
+    // Windows: left click opens the window
+    await ref.read(windowProvider.notifier).open();
   }
 
   @override
   Future<void> onTrayIconRightMouseDown() async {
+    // Windows: right click shows context menu
     await trayManager.popUpContextMenu();
   }
 }

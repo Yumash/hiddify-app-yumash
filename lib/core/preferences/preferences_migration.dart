@@ -62,12 +62,8 @@ class PreferencesVersion1Migration extends PreferencesMigrationStep
       await sharedPreferences.setString("service-mode", newMode);
     }
 
-    if (sharedPreferences.getString("ipv6-mode") case final String ipv6Mode) {
-      loggy.debug(
-        "changing ipv6-mode from [$ipv6Mode] to [${_ipv6Mapper(ipv6Mode)}]",
-      );
-      await sharedPreferences.setString("ipv6-mode", _ipv6Mapper(ipv6Mode));
-    }
+    // Remove old ipv6-mode setting (no longer used)
+    await sharedPreferences.remove("ipv6-mode");
 
     if (sharedPreferences.getString("remote-domain-dns-strategy")
         case final String remoteDomainStrategy) {
@@ -106,30 +102,14 @@ class PreferencesVersion1Migration extends PreferencesMigrationStep
     await sharedPreferences.remove("cron_profiles_update");
   }
 
-  String _ipv6Mapper(String persisted) => switch (persisted) {
-        "ipv4_only" ||
-        "prefer_ipv4" ||
-        "prefer_ipv4" ||
-        "ipv6_only" =>
-          persisted,
-        "disable" => "ipv4_only",
-        "enable" => "prefer_ipv4",
-        "prefer" => "prefer_ipv6",
-        "only" => "ipv6_only",
-        _ => "ipv4_only",
-      };
-
+  // Maps old domain strategy values to new ones (IPv6 options become auto)
   String _domainStrategyMapper(String persisted) => switch (persisted) {
-        "ipv4_only" ||
-        "prefer_ipv4" ||
-        "prefer_ipv4" ||
-        "ipv6_only" =>
-          persisted,
-        "auto" => "",
-        "preferIpv6" => "prefer_ipv6",
+        "ipv4_only" || "prefer_ipv4" => persisted,
         "preferIpv4" => "prefer_ipv4",
         "ipv4Only" => "ipv4_only",
-        "ipv6Only" => "ipv6_only",
+        // IPv6 options are no longer supported, use auto
+        "ipv6_only" || "prefer_ipv6" || "preferIpv6" || "ipv6Only" => "",
+        "auto" => "",
         _ => "",
       };
 }

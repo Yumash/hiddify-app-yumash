@@ -20,7 +20,6 @@ enum ProxyType {
 
   selector("Selector"),
   urltest("URLTest"),
-  warp("Warp"),
 
   xvless("xVLESS"),
   xvmess("xVMess"),

@@ -1,16 +1,35 @@
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_adaptive_scaffold/flutter_adaptive_scaffold.dart';
 import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/router/router.dart';
 import 'package:hiddify/features/stats/widget/side_bar_stats_overview.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+/// Breakpoint definitions for adaptive layout
+/// Note: Windows-only app with minimum window size 900x600
+class AdaptiveBreakpoints {
+  static const double small = 600;
+  static const double medium = 840;
+  // Reduced from 1200 to 900 to match minimum window size
+  static const double large = 900;
+
+  static bool isSmall(BuildContext context) =>
+      MediaQuery.sizeOf(context).width < small;
+
+  static bool isMedium(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    return width >= small && width < large;
+  }
+
+  static bool isLarge(BuildContext context) =>
+      MediaQuery.sizeOf(context).width >= large;
+}
+
 abstract interface class RootScaffold {
   static final stateKey = GlobalKey<ScaffoldState>();
 
   static bool canShowDrawer(BuildContext context) =>
-      Breakpoints.small.isActive(context);
+      AdaptiveBreakpoints.isSmall(context);
 }
 
 class AdaptiveRootScaffold extends HookConsumerWidget {
@@ -58,9 +77,7 @@ class AdaptiveRootScaffold extends HookConsumerWidget {
         switchTab(index, context);
       },
       destinations: destinations,
-      drawerDestinationRange: useMobileRouter ? (2, null) : (0, null),
-      bottomDestinationRange: (0, 2),
-      useBottomSheet: useMobileRouter,
+      drawerDestinationRange: (0, null),
       sidebarTrailing: const Expanded(
         child: Align(
           alignment: Alignment.bottomCenter,
@@ -78,8 +95,6 @@ class _CustomAdaptiveScaffold extends HookConsumerWidget {
     required this.onSelectedIndexChange,
     required this.destinations,
     required this.drawerDestinationRange,
-    required this.bottomDestinationRange,
-    this.useBottomSheet = false,
     this.sidebarTrailing,
     required this.body,
   });
@@ -88,8 +103,6 @@ class _CustomAdaptiveScaffold extends HookConsumerWidget {
   final Function(int) onSelectedIndexChange;
   final List<NavigationDestination> destinations;
   final (int, int?) drawerDestinationRange;
-  final (int, int?) bottomDestinationRange;
-  final bool useBottomSheet;
   final Widget? sidebarTrailing;
   final Widget body;
 
@@ -106,71 +119,72 @@ class _CustomAdaptiveScaffold extends HookConsumerWidget {
   void selectWithOffset(int index, (int, int?) range) =>
       onSelectedIndexChange(index + range.$1);
 
+  /// Convert NavigationDestination to NavigationRailDestination
+  NavigationRailDestination _toRailDestination(NavigationDestination dest) {
+    return NavigationRailDestination(
+      icon: dest.icon,
+      selectedIcon: dest.selectedIcon,
+      label: Text(dest.label),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final size = MediaQuery.sizeOf(context);
+    final width = size.width;
+
+    // During startup, width may be 0 - show loading indicator until window is ready
+    if (width == 0) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    // Windows-only app with minimum 900px width, so always large
+    final isSmall = AdaptiveBreakpoints.isSmall(context);
+    final isLarge = AdaptiveBreakpoints.isLarge(context);
+
+    // Debug: log window size
+    // print('[Scaffold] width=$width height=${size.height} isSmall=$isSmall isLarge=$isLarge');
+
     return Scaffold(
       key: RootScaffold.stateKey,
-      drawer: Breakpoints.small.isActive(context)
+      drawer: isSmall
           ? Drawer(
               width: (MediaQuery.sizeOf(context).width * 0.88).clamp(1, 304),
               child: NavigationRail(
                 extended: true,
                 selectedIndex: selectedWithOffset(drawerDestinationRange),
                 destinations: destinationsSlice(drawerDestinationRange)
-                    .map((dest) => AdaptiveScaffold.toRailDestination(dest))
+                    .map(_toRailDestination)
                     .toList(),
                 onDestinationSelected: (index) =>
                     selectWithOffset(index, drawerDestinationRange),
               ),
             )
           : null,
-      body: AdaptiveLayout(
-        primaryNavigation: SlotLayout(
-          config: <Breakpoint, SlotLayoutConfig>{
-            Breakpoints.medium: SlotLayout.from(
-              key: const Key('primaryNavigation'),
-              builder: (_) => AdaptiveScaffold.standardNavigationRail(
-                selectedIndex: selectedIndex,
-                destinations: destinations
-                    .map((dest) => AdaptiveScaffold.toRailDestination(dest))
-                    .toList(),
-                onDestinationSelected: onSelectedIndexChange,
-              ),
+      body: Row(
+        children: [
+          // Navigation Rail for medium and large screens
+          if (!isSmall)
+            NavigationRail(
+              extended: isLarge,
+              selectedIndex: selectedIndex,
+              destinations: destinations.map(_toRailDestination).toList(),
+              onDestinationSelected: onSelectedIndexChange,
+              // Show stats overview only when extended (large screens >= 1200px)
+              // because Expanded widget requires extended NavigationRail
+              trailing: isLarge ? sidebarTrailing : null,
             ),
-            Breakpoints.large: SlotLayout.from(
-              key: const Key('primaryNavigation1'),
-              builder: (_) => AdaptiveScaffold.standardNavigationRail(
-                extended: true,
-                selectedIndex: selectedIndex,
-                destinations: destinations
-                    .map((dest) => AdaptiveScaffold.toRailDestination(dest))
-                    .toList(),
-                onDestinationSelected: onSelectedIndexChange,
-                trailing: sidebarTrailing,
-              ),
+          // Main content
+          Expanded(
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              child: body,
             ),
-          },
-        ),
-        body: SlotLayout(
-          config: <Breakpoint, SlotLayoutConfig?>{
-            Breakpoints.standard: SlotLayout.from(
-              key: const Key('body'),
-              inAnimation: AdaptiveScaffold.fadeIn,
-              outAnimation: AdaptiveScaffold.fadeOut,
-              builder: (context) => body,
-            ),
-          },
-        ),
+          ),
+        ],
       ),
-      // AdaptiveLayout bottom sheet has accessibility issues
-      bottomNavigationBar: useBottomSheet && Breakpoints.small.isActive(context)
-          ? NavigationBar(
-              selectedIndex: selectedWithOffset(bottomDestinationRange) ?? 0,
-              destinations: destinationsSlice(bottomDestinationRange),
-              onDestinationSelected: (index) =>
-                  selectWithOffset(index, bottomDestinationRange),
-            )
-          : null,
     );
   }
 }

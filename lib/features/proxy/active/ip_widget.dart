@@ -1,21 +1,25 @@
 import 'package:circle_flags/circle_flags.dart';
 import 'package:flutter/material.dart';
-import 'package:hiddify/core/haptic/haptic_service.dart';
 import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/utils/ip_utils.dart';
 import 'package:hiddify/gen/fonts.gen.dart';
 import 'package:hiddify/utils/riverpod_utils.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-final _showIp = StateProvider.autoDispose((ref) {
-  ref.disposeDelay(const Duration(seconds: 20));
-  ref.listenSelf((previous, next) {
-    if (previous == false && next == true) {
-      ref.read(hapticServiceProvider.notifier).mediumImpact();
-    }
-  });
-  return false;
-});
+part 'ip_widget.g.dart';
+
+/// AutoDispose notifier for IP visibility toggle (Riverpod 3.x)
+@riverpod
+class ShowIp extends _$ShowIp {
+  @override
+  bool build() {
+    ref.disposeDelay(const Duration(seconds: 20));
+    return false;
+  }
+
+  void toggle() => state = !state;
+}
 
 class IPText extends HookConsumerWidget {
   const IPText({
@@ -32,7 +36,7 @@ class IPText extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = ref.watch(translationsProvider);
-    final isVisible = ref.watch(_showIp);
+    final isVisible = ref.watch(showIpProvider);
     final textTheme = Theme.of(context).textTheme;
     final ipStyle =
         (constrained ? textTheme.labelMedium : textTheme.labelLarge)?.copyWith(
@@ -43,7 +47,7 @@ class IPText extends HookConsumerWidget {
       label: t.proxies.ipInfoSemantics.address,
       child: InkWell(
         onTap: () {
-          ref.read(_showIp.notifier).state = !isVisible;
+          ref.read(showIpProvider.notifier).toggle();
         },
         onLongPress: onLongPress,
         borderRadius: BorderRadius.circular(12),
@@ -133,7 +137,7 @@ class IPCountryFlag extends HookConsumerWidget {
         padding: const EdgeInsets.all(2),
         child: Center(
           child: CircleFlag(
-              countryCode.toLowerCase() == "ir" ? "ir-shir" : countryCode),
+              countryCode.toLowerCase() == "ir" ? "ir-shir" : countryCode,),
         ),
       ),
     );

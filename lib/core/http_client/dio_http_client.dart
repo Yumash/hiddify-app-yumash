@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:dio/io.dart';
 import 'package:dio_smart_retry/dio_smart_retry.dart';
-import 'package:flutter_loggy_dio/flutter_loggy_dio.dart';
 import 'package:hiddify/utils/custom_loggers.dart';
 
 class DioHttpClient with InfraLogger {
@@ -14,7 +13,7 @@ class DioHttpClient with InfraLogger {
     required String userAgent,
     required bool debug,
   }) {
-    for (var mode in ["proxy", "direct", "both"]) {
+    for (final mode in ["proxy", "direct", "both"]) {
       _dio[mode] = Dio(
         BaseOptions(
           connectTimeout: timeout,
@@ -31,7 +30,7 @@ class DioHttpClient with InfraLogger {
                 if (mode != "proxy") ...[
                   const Duration(seconds: 2),
                   const Duration(seconds: 3),
-                ]
+                ],
               ],
             ),
           );
@@ -59,18 +58,7 @@ class DioHttpClient with InfraLogger {
   }
 
   int port = 0;
-  // bool isPortOpen(String host, int port, {Duration timeout = const Duration(milliseconds: 200)}) async{
-  //   try {
-  //     Socket.connect(host, port, timeout: timeout).then((socket) {
-  //       socket.destroy();
-  //     });
-  //     return true;
-  //   } on SocketException catch (_) {
-  //     return false;
-  //   } catch (_) {
-  //     return false;
-  //   }
-  // }
+
   Future<bool> isPortOpen(String host, int port, {Duration timeout = const Duration(seconds: 5)}) async {
     try {
       final socket = await Socket.connect(host, port, timeout: timeout);
@@ -106,6 +94,104 @@ class DioHttpClient with InfraLogger {
       url,
       cancelToken: cancelToken,
       options: _options(url, userAgent: userAgent, credentials: credentials),
+    );
+  }
+
+  /// Maximum allowed content length for subscription downloads (100KB)
+  static const int maxContentLength = 100 * 1024;
+
+  /// Check Content-Length before downloading
+  /// Returns content length if valid, throws if invalid or too large
+  Future<int> checkContentLength(
+    String url, {
+    CancelToken? cancelToken,
+    String? userAgent,
+    ({String username, String password})? credentials,
+    bool proxyOnly = false,
+  }) async {
+    final mode = proxyOnly
+        ? "proxy"
+        : await isPortOpen("127.0.0.1", port)
+            ? "both"
+            : "direct";
+    final dio = _dio[mode]!;
+
+    final response = await dio.head(
+      url,
+      cancelToken: cancelToken,
+      options: _options(url, userAgent: userAgent, credentials: credentials),
+    );
+
+    final contentLengthHeader = response.headers.value('content-length');
+    if (contentLengthHeader == null) {
+      // No Content-Length header, allow but with caution
+      loggy.warning("No Content-Length header for $url, proceeding with caution");
+      return -1; // Unknown length
+    }
+
+    final contentLength = int.tryParse(contentLengthHeader) ?? 0;
+    if (contentLength == 0) {
+      // Content-Length: 0 often happens with dynamic content servers (like Hiddify Manager)
+      // that don't know the size until they generate the response
+      loggy.warning("Content-Length is 0 for $url (likely dynamic content), proceeding with caution");
+      return -1; // Unknown length, proceed without size limit
+    }
+
+    if (contentLength > maxContentLength) {
+      throw DioException(
+        requestOptions: response.requestOptions,
+        message: 'Content-Length ($contentLength) exceeds maximum allowed ($maxContentLength)',
+      );
+    }
+
+    loggy.debug("Content-Length for $url: $contentLength bytes");
+    return contentLength;
+  }
+
+  /// Safe download with Content-Length check
+  Future<Response> downloadSafe(
+    String url,
+    String path, {
+    CancelToken? cancelToken,
+    String? userAgent,
+    ({String username, String password})? credentials,
+    bool proxyOnly = false,
+  }) async {
+    // First check Content-Length
+    final contentLength = await checkContentLength(
+      url,
+      cancelToken: cancelToken,
+      userAgent: userAgent,
+      credentials: credentials,
+      proxyOnly: proxyOnly,
+    );
+
+    final mode = proxyOnly
+        ? "proxy"
+        : await isPortOpen("127.0.0.1", port)
+            ? "both"
+            : "direct";
+    final dio = _dio[mode]!;
+
+    // Download with size limit
+    return dio.download(
+      url,
+      path,
+      cancelToken: cancelToken,
+      options: _options(
+        url,
+        userAgent: userAgent,
+        credentials: credentials,
+      ),
+      onReceiveProgress: (received, total) {
+        // Abort if received more than expected (protection against Content-Length spoofing)
+        if (contentLength > 0 && received > contentLength * 1.1) {
+          cancelToken?.cancel('Received data exceeds Content-Length');
+        }
+        if (received > maxContentLength) {
+          cancelToken?.cancel('Download exceeds maximum allowed size');
+        }
+      },
     );
   }
 
@@ -158,8 +244,6 @@ class DioHttpClient with InfraLogger {
       headers: {
         if (userAgent != null) "User-Agent": userAgent,
         if (basicAuth != null) "authorization": basicAuth,
-        // "Accept": "application/json",
-        // "Content-Type": "application/json",
       },
     );
   }

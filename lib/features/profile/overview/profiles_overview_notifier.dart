@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/services.dart';
 import 'package:fpdart/fpdart.dart';
-import 'package:hiddify/core/haptic/haptic_service.dart';
+import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
 import 'package:hiddify/features/profile/data/profile_data_providers.dart';
 import 'package:hiddify/features/profile/data/profile_repository.dart';
 import 'package:hiddify/features/profile/model/profile_entity.dart';
@@ -28,15 +28,14 @@ class ProfilesOverviewSortNotifier extends _$ProfilesOverviewSortNotifier with A
 class ProfilesOverviewNotifier extends _$ProfilesOverviewNotifier with AppLogger {
   @override
   Stream<List<ProfileEntity>> build() {
-    final sort = ref.watch(profilesOverviewSortNotifierProvider);
+    final sort = ref.watch(profilesOverviewSortProvider);
     return _profilesRepo.watchAll(sort: sort.by, sortMode: sort.mode).map((event) => event.getOrElse((l) => throw l));
   }
 
   ProfileRepository get _profilesRepo => ref.read(profileRepositoryProvider).requireValue;
 
-  Future<Unit> selectActiveProfile(String id) async {
+  Future<Unit> selectActiveProfile(String id) {
     loggy.debug('changing active profile to: [$id]');
-    await ref.read(hapticServiceProvider.notifier).lightImpact();
     return _profilesRepo.setAsActive(id).getOrElse((err) {
       loggy.warning('failed to set [$id] as active profile', err);
       throw err;
@@ -45,6 +44,13 @@ class ProfilesOverviewNotifier extends _$ProfilesOverviewNotifier with AppLogger
 
   Future<void> deleteProfile(ProfileEntity profile) async {
     loggy.debug('deleting profile: ${profile.name}');
+
+    // If profile is active, disconnect first to prevent connection issues
+    if (profile.active) {
+      loggy.info('profile is active, disconnecting before deletion');
+      await ref.read(connectionProvider.notifier).abortConnection();
+    }
+
     await _profilesRepo.deleteById(profile.id).match(
       (err) {
         loggy.warning('failed to delete profile', err);

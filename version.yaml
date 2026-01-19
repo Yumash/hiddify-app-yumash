@@ -1,0 +1,6 @@
+# Hiddify Yumash Edition Version Config
+# Format: {hiddify_base}-yumash-{yumash_version}
+# Example: 2.5.7-yumash-1.0.0
+
+hiddify_base: "2.5.7"
+yumash_version: "1.0.0"

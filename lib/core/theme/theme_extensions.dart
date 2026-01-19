@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hiddify/core/theme/yumash_colors.dart';
 
 class ConnectionButtonTheme extends ThemeExtension<ConnectionButtonTheme> {
   const ConnectionButtonTheme({
@@ -9,9 +10,16 @@ class ConnectionButtonTheme extends ThemeExtension<ConnectionButtonTheme> {
   final Color? idleColor;
   final Color? connectedColor;
 
+  // Light theme: TARDIS Blue when idle, Green when connected
   static const ConnectionButtonTheme light = ConnectionButtonTheme(
-    idleColor: Color(0xFF4a4d8b),
-    connectedColor: Color(0xFF44a334),
+    idleColor: YumashColors.secondary,
+    connectedColor: YumashColors.success,
+  );
+
+  // Dark theme: Lighter variants for visibility
+  static const ConnectionButtonTheme dark = ConnectionButtonTheme(
+    idleColor: YumashColors.secondaryDarkTheme,
+    connectedColor: YumashColors.success,
   );
 
   @override

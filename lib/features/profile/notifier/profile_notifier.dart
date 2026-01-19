@@ -1,17 +1,11 @@
 import 'dart:async';
 
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
 import 'package:fpdart/fpdart.dart';
-import 'package:hiddify/core/haptic/haptic_service.dart';
 import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/model/failures.dart';
 import 'package:hiddify/core/notification/in_app_notification_controller.dart';
 import 'package:hiddify/core/preferences/general_preferences.dart';
-import 'package:hiddify/core/preferences/preferences_provider.dart';
-import 'package:hiddify/features/common/adaptive_root_scaffold.dart';
-import 'package:hiddify/features/config_option/notifier/warp_option_notifier.dart';
-import 'package:hiddify/features/config_option/overview/warp_options_widgets.dart';
 import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
 import 'package:hiddify/features/profile/data/profile_data_providers.dart';
 import 'package:hiddify/features/profile/data/profile_repository.dart';
@@ -33,7 +27,7 @@ class AddProfile extends _$AddProfile with AppLogger {
       loggy.debug("disposing");
       _cancelToken?.cancel();
     });
-    ref.listenSelf(
+    listenSelf(
       (previous, next) {
         final t = ref.read(translationsProvider);
         final notification = ref.read(inAppNotificationControllerProvider);
@@ -48,6 +42,8 @@ class AddProfile extends _$AddProfile with AppLogger {
                 t.presentError(error, action: t.profile.add.failureMsg),
               );
             }
+          case _:
+            break;
         }
       },
     );
@@ -60,7 +56,6 @@ class AddProfile extends _$AddProfile with AppLogger {
   Future<void> add(String rawInput) async {
     if (state.isLoading) return;
     state = const AsyncLoading();
-    // await check4Warp(rawInput);
     state = await AsyncValue.guard(
       () async {
         final activeProfile = await ref.read(activeProfileProvider.future);
@@ -75,14 +70,11 @@ class AddProfile extends _$AddProfile with AppLogger {
           );
         } else if (LinkParser.protocol(rawInput) case (final parsed)?) {
           loggy.debug("adding profile, content");
-          var name = parsed.name;
-          var oldItem = await _profilesRepo.getByName(name);
-          if (name == "Hiddify WARP" && oldItem != null) {
-            _profilesRepo.deleteById(oldItem.id).run();
+          final nameBuffer = StringBuffer(parsed.name);
+          while (await _profilesRepo.getByName(nameBuffer.toString()) != null) {
+            nameBuffer.write(randomInt(0, 9).run());
           }
-          while (await _profilesRepo.getByName(name) != null) {
-            name += '${randomInt(0, 9).run()}';
-          }
+          final name = nameBuffer.toString();
           task = _profilesRepo.addByContent(
             parsed.content,
             name: name,
@@ -107,48 +99,6 @@ class AddProfile extends _$AddProfile with AppLogger {
       },
     );
   }
-
-  Future<void> check4Warp(String rawInput) async {
-    for (final line in rawInput.split("\n")) {
-      if (line.toLowerCase().startsWith("warp://")) {
-        final _prefs = ref.read(sharedPreferencesProvider).requireValue;
-        final _warp = ref.read(warpOptionNotifierProvider.notifier);
-
-        final consent = false && (_prefs.getBool(WarpOptionNotifier.warpConsentGiven) ?? false);
-
-        final t = ref.read(translationsProvider);
-        final notification = ref.read(inAppNotificationControllerProvider);
-
-        if (!consent) {
-          final agreed = await showDialog<bool>(
-            context: RootScaffold.stateKey.currentContext!,
-            builder: (context) => const WarpLicenseAgreementModal(),
-          );
-
-          if (agreed ?? false) {
-            await _prefs.setBool(WarpOptionNotifier.warpConsentGiven, true);
-            final toast = notification.showInfoToast(t.profile.add.addingWarpMsg, duration: const Duration(milliseconds: 100));
-            toast?.pause();
-            await _warp.generateWarpConfig();
-            toast?.start();
-          } else {
-            return;
-          }
-        }
-
-        final accountId = _prefs.getString("warp2-account-id");
-        final accessToken = _prefs.getString("warp2-access-token");
-        final hasWarp2Config = accountId != null && accessToken != null;
-
-        if (!hasWarp2Config || true) {
-          final toast = notification.showInfoToast(t.profile.add.addingWarpMsg, duration: const Duration(milliseconds: 100));
-          toast?.pause();
-          await _warp.generateWarp2Config();
-          toast?.start();
-        }
-      }
-    }
-  }
 }
 
 @riverpod
@@ -156,7 +106,7 @@ class UpdateProfile extends _$UpdateProfile with AppLogger {
   @override
   AsyncValue<Unit?> build(String id) {
     ref.disposeDelay(const Duration(minutes: 1));
-    ref.listenSelf(
+    listenSelf(
       (previous, next) {
         final t = ref.read(translationsProvider);
         final notification = ref.read(inAppNotificationControllerProvider);
@@ -167,6 +117,8 @@ class UpdateProfile extends _$UpdateProfile with AppLogger {
             notification.showErrorDialog(
               t.presentError(error, action: t.profile.update.failureMsg),
             );
+          case _:
+            break;
         }
       },
     );
@@ -178,7 +130,6 @@ class UpdateProfile extends _$UpdateProfile with AppLogger {
   Future<void> updateProfile(RemoteProfileEntity profile) async {
     if (state.isLoading) return;
     state = const AsyncLoading();
-    await ref.read(hapticServiceProvider.notifier).lightImpact();
     state = await AsyncValue.guard(
       () async {
         return await _profilesRepo.updateSubscription(profile).match(
@@ -193,7 +144,7 @@ class UpdateProfile extends _$UpdateProfile with AppLogger {
 
             await ref.read(activeProfileProvider.future).then((active) async {
               if (active != null && active.id == profile.id) {
-                await ref.read(connectionNotifierProvider.notifier).reconnect(profile);
+                await ref.read(connectionProvider.notifier).reconnect(profile);
               }
             });
             return unit;

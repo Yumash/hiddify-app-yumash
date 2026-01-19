@@ -9,6 +9,7 @@ class ValuePreferenceWidget<T> extends StatelessWidget {
     required this.preferences,
     this.enabled = true,
     required this.title,
+    this.subtitle,
     this.presentValue,
     this.formatInputValue,
     this.validateInput,
@@ -20,6 +21,7 @@ class ValuePreferenceWidget<T> extends StatelessWidget {
   final PreferencesNotifier<T, dynamic> preferences;
   final bool enabled;
   final String title;
+  final String? subtitle;
   final String Function(T value)? presentValue;
   final String Function(T value)? formatInputValue;
   final bool Function(String value)? validateInput;
@@ -28,9 +30,10 @@ class ValuePreferenceWidget<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final subtitleText = subtitle ?? presentValue?.call(value) ?? value.toString();
     return ListTile(
       title: Text(title),
-      subtitle: Text(presentValue?.call(value) ?? value.toString()),
+      subtitle: Text(subtitleText),
       enabled: enabled,
       onTap: () async {
         final inputValue = await SettingsInputDialog(

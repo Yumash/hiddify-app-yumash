@@ -1,21 +1,19 @@
 import 'package:hiddify/core/preferences/preferences_provider.dart';
 import 'package:hiddify/gen/translations.g.dart';
 import 'package:hiddify/utils/custom_loggers.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:riverpod/riverpod.dart';
 
-part 'locale_preferences.g.dart';
+// Manual provider - riverpod_generator doesn't work with slang types
+// See: https://github.com/rrousselGit/riverpod/issues/4323
+final localePreferencesProvider =
+    NotifierProvider<LocalePreferences, AppLocale>(LocalePreferences.new);
 
-@Riverpod(keepAlive: true)
-class LocalePreferences extends _$LocalePreferences with AppLogger {
+class LocalePreferences extends Notifier<AppLocale> with AppLogger {
   @override
   AppLocale build() {
     final persisted =
         ref.watch(sharedPreferencesProvider).requireValue.getString("locale");
     if (persisted == null) return AppLocaleUtils.findDeviceLocale();
-    // keep backward compatibility with chinese after changing zh to zh_CN
-    if (persisted == "zh") {
-      return AppLocale.zhCn;
-    }
     try {
       return AppLocale.values.byName(persisted);
     } catch (e) {

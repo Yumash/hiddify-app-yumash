@@ -6,10 +6,8 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'async_mutation.freezed.dart';
 
-// TODO: test and improve
-
 @freezed
-class AsyncMutation with _$AsyncMutation {
+sealed class AsyncMutation with _$AsyncMutation {
   const AsyncMutation._();
 
   const factory AsyncMutation.idle() = Idle;

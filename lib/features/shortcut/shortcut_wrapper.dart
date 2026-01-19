@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hiddify/core/router/router.dart';
@@ -15,28 +13,17 @@ class ShortcutWrapper extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Shortcuts(
       shortcuts: {
-        // Android TV D-pad select support
-        LogicalKeySet(LogicalKeyboardKey.select): const ActivateIntent(),
+        // Windows shortcuts
+        // Quit app using Control+Q
+        const SingleActivator(LogicalKeyboardKey.keyQ, control: true):
+            QuitAppIntent(),
 
-        if (Platform.isLinux) ...{
-          // quit app using Control+Q on Linux
-          const SingleActivator(LogicalKeyboardKey.keyQ, control: true):
-              QuitAppIntent(),
-        },
+        // Close window using Alt+F4 (default Windows behavior)
+        // Open settings using Control+,
+        const SingleActivator(LogicalKeyboardKey.comma, control: true):
+            OpenSettingsIntent(),
 
-        if (Platform.isMacOS) ...{
-          // close window using Command+W on macOS
-          const SingleActivator(LogicalKeyboardKey.keyW, meta: true):
-              CloseWindowIntent(),
-
-          // open settings using Command+, on macOS
-          const SingleActivator(LogicalKeyboardKey.comma, meta: true):
-              OpenSettingsIntent(),
-        },
-
-        // try adding profile using Command+V and Control+V
-        const SingleActivator(LogicalKeyboardKey.keyV, meta: true):
-            PasteIntent(),
+        // Add profile using Control+V (paste)
         const SingleActivator(LogicalKeyboardKey.keyV, control: true):
             PasteIntent(),
       },
@@ -44,13 +31,13 @@ class ShortcutWrapper extends HookConsumerWidget {
         actions: {
           CloseWindowIntent: CallbackAction(
             onInvoke: (_) async {
-              await ref.read(windowNotifierProvider.notifier).close();
+              await ref.read(windowProvider.notifier).close();
               return null;
             },
           ),
           QuitAppIntent: CallbackAction(
             onInvoke: (_) async {
-              await ref.read(windowNotifierProvider.notifier).quit();
+              await ref.read(windowProvider.notifier).quit();
               return null;
             },
           ),

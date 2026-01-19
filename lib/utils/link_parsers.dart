@@ -3,12 +3,12 @@ import 'dart:convert';
 import 'package:dartx/dartx.dart';
 import 'package:hiddify/features/profile/data/profile_parser.dart';
 import 'package:hiddify/features/profile/data/profile_repository.dart';
+import 'package:hiddify/features/profile/model/parsed_proxy_link.dart';
 import 'package:hiddify/singbox/model/singbox_proxy_type.dart';
 import 'package:hiddify/utils/validators.dart';
 
 typedef ProfileLink = ({String url, String name});
 
-// TODO: test and improve
 abstract class LinkParser {
   static String generateSubShareLink(String url, [String? name]) {
     final uri = Uri.tryParse(url);
@@ -20,12 +20,11 @@ abstract class LinkParser {
       query: uri.query,
       fragment: name ?? uri.fragment,
     );
-    // return 'hiddify://import/$modifiedUri';
     return '$modifiedUri';
   }
 
   // protocols schemas
-  static const protocols = {'clash', 'clashmeta', 'sing-box', 'hiddify'};
+  static const protocols = {'sing-box', 'hiddify'};
 
   static ProfileLink? parse(String link) {
     return simple(link) ?? deep(link);
@@ -59,7 +58,6 @@ abstract class LinkParser {
         'hy' || 'hysteria' => fragment ?? ProxyType.hysteria.label,
         'ssh' => fragment ?? ProxyType.ssh.label,
         'wg' => fragment ?? ProxyType.wireguard.label,
-        'warp' => fragment ?? ProxyType.warp.label,
         _ => null,
       };
     }
@@ -78,9 +76,6 @@ abstract class LinkParser {
     if (uri == null || !uri.hasScheme || !uri.hasAuthority) return null;
     final queryParams = uri.queryParameters;
     switch (uri.scheme) {
-      case 'clash' || 'clashmeta' when uri.authority == 'install-config':
-        if (uri.authority != 'install-config' || !queryParams.containsKey('url')) return null;
-        return (url: queryParams['url']!, name: queryParams['name'] ?? '');
       case 'sing-box':
         if (uri.authority != 'import-remote-profile' || !queryParams.containsKey('url')) return null;
         return (url: queryParams['url']!, name: queryParams['name'] ?? '');
@@ -103,4 +98,43 @@ String safeDecodeBase64(String str) {
   } catch (e) {
     return str;
   }
+}
+
+/// Content analysis result with XHTTP detection
+class ContentAnalysis {
+  const ContentAnalysis({
+    required this.totalConfigs,
+    required this.xhttpConfigs,
+    required this.supportedConfigs,
+    required this.parsedLinks,
+  });
+
+  final int totalConfigs;
+  final int xhttpConfigs;
+  final int supportedConfigs;
+  final List<ParsedProxyLink> parsedLinks;
+
+  bool get hasXhttp => xhttpConfigs > 0;
+  bool get allSupported => xhttpConfigs == 0;
+}
+
+/// Analyze subscription content for XHTTP and unsupported transports
+ContentAnalysis analyzeContent(String content) {
+  final normalContent = safeDecodeBase64(content);
+  final parsedLinks = ParsedProxyLink.parseAll(normalContent);
+
+  final xhttpCount = ParsedProxyLink.countXhttp(parsedLinks);
+
+  return ContentAnalysis(
+    totalConfigs: parsedLinks.length,
+    xhttpConfigs: xhttpCount,
+    supportedConfigs: parsedLinks.length - xhttpCount,
+    parsedLinks: parsedLinks,
+  );
+}
+
+/// Check if a single link uses XHTTP transport
+bool isXhttpLink(String link) {
+  final parsed = ParsedProxyLink.parse(link);
+  return parsed?.isXhttp ?? false;
 }

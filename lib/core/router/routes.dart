@@ -4,11 +4,9 @@ import 'package:hiddify/core/router/app_router.dart';
 import 'package:hiddify/features/common/adaptive_root_scaffold.dart';
 import 'package:hiddify/features/config_option/overview/config_options_page.dart';
 import 'package:hiddify/features/config_option/widget/quick_settings_modal.dart';
-
+import 'package:hiddify/features/config_option/widget/wireguard_server_page.dart';
 import 'package:hiddify/features/home/widget/home_page.dart';
-import 'package:hiddify/features/intro/widget/intro_page.dart';
 import 'package:hiddify/features/log/overview/logs_overview_page.dart';
-import 'package:hiddify/features/per_app_proxy/overview/per_app_proxy_page.dart';
 import 'package:hiddify/features/profile/add/add_profile_modal.dart';
 import 'package:hiddify/features/profile/details/profile_details_page.dart';
 import 'package:hiddify/features/profile/overview/profiles_overview_page.dart';
@@ -18,73 +16,6 @@ import 'package:hiddify/features/settings/overview/settings_overview_page.dart';
 import 'package:hiddify/utils/utils.dart';
 
 part 'routes.g.dart';
-
-GlobalKey<NavigatorState>? _dynamicRootKey = useMobileRouter ? rootNavigatorKey : null;
-
-@TypedShellRoute<MobileWrapperRoute>(
-  routes: [
-    TypedGoRoute<HomeRoute>(
-      path: "/",
-      name: HomeRoute.name,
-      routes: [
-        TypedGoRoute<AddProfileRoute>(
-          path: "add",
-          name: AddProfileRoute.name,
-        ),
-        TypedGoRoute<ProfilesOverviewRoute>(
-          path: "profiles",
-          name: ProfilesOverviewRoute.name,
-        ),
-        TypedGoRoute<NewProfileRoute>(
-          path: "profiles/new",
-          name: NewProfileRoute.name,
-        ),
-        TypedGoRoute<ProfileDetailsRoute>(
-          path: "profiles/:id",
-          name: ProfileDetailsRoute.name,
-        ),
-        TypedGoRoute<ConfigOptionsRoute>(
-          path: "config-options",
-          name: ConfigOptionsRoute.name,
-        ),
-        TypedGoRoute<QuickSettingsRoute>(
-          path: "quick-settings",
-          name: QuickSettingsRoute.name,
-        ),
-        TypedGoRoute<SettingsRoute>(
-          path: "settings",
-          name: SettingsRoute.name,
-          routes: [
-            TypedGoRoute<PerAppProxyRoute>(
-              path: "per-app-proxy",
-              name: PerAppProxyRoute.name,
-            ),
-          ],
-        ),
-        TypedGoRoute<LogsOverviewRoute>(
-          path: "logs",
-          name: LogsOverviewRoute.name,
-        ),
-        TypedGoRoute<AboutRoute>(
-          path: "about",
-          name: AboutRoute.name,
-        ),
-      ],
-    ),
-    TypedGoRoute<ProxiesRoute>(
-      path: "/proxies",
-      name: ProxiesRoute.name,
-    ),
-  ],
-)
-class MobileWrapperRoute extends ShellRouteData {
-  const MobileWrapperRoute();
-
-  @override
-  Widget builder(BuildContext context, GoRouterState state, Widget navigator) {
-    return AdaptiveRootScaffold(navigator);
-  }
-}
 
 @TypedShellRoute<DesktopWrapperRoute>(
   routes: [
@@ -122,10 +53,13 @@ class MobileWrapperRoute extends ShellRouteData {
       path: "/config-options",
       name: ConfigOptionsRoute.name,
     ),
+    TypedGoRoute<WireGuardServerRoute>(
+      path: "/wireguard-server",
+      name: WireGuardServerRoute.name,
+    ),
     TypedGoRoute<SettingsRoute>(
       path: "/settings",
       name: SettingsRoute.name,
-      routes: [],
     ),
     TypedGoRoute<LogsOverviewRoute>(
       path: "/logs",
@@ -146,22 +80,7 @@ class DesktopWrapperRoute extends ShellRouteData {
   }
 }
 
-@TypedGoRoute<IntroRoute>(path: "/intro", name: IntroRoute.name)
-class IntroRoute extends GoRouteData {
-  const IntroRoute();
-  static const name = "Intro";
-
-  @override
-  Page<void> buildPage(BuildContext context, GoRouterState state) {
-    return MaterialPage(
-      fullscreenDialog: true,
-      name: name,
-      child: IntroPage(),
-    );
-  }
-}
-
-class HomeRoute extends GoRouteData {
+class HomeRoute extends GoRouteData with $HomeRoute {
   const HomeRoute();
   static const name = "Home";
 
@@ -174,7 +93,7 @@ class HomeRoute extends GoRouteData {
   }
 }
 
-class ProxiesRoute extends GoRouteData {
+class ProxiesRoute extends GoRouteData with $ProxiesRoute {
   const ProxiesRoute();
   static const name = "Proxies";
 
@@ -187,7 +106,7 @@ class ProxiesRoute extends GoRouteData {
   }
 }
 
-class AddProfileRoute extends GoRouteData {
+class AddProfileRoute extends GoRouteData with $AddProfileRoute {
   const AddProfileRoute({this.url});
 
   final String? url;
@@ -209,7 +128,7 @@ class AddProfileRoute extends GoRouteData {
   }
 }
 
-class ProfilesOverviewRoute extends GoRouteData {
+class ProfilesOverviewRoute extends GoRouteData with $ProfilesOverviewRoute {
   const ProfilesOverviewRoute();
   static const name = "Profiles";
 
@@ -224,7 +143,7 @@ class ProfilesOverviewRoute extends GoRouteData {
   }
 }
 
-class NewProfileRoute extends GoRouteData {
+class NewProfileRoute extends GoRouteData with $NewProfileRoute {
   const NewProfileRoute();
   static const name = "New Profile";
 
@@ -240,7 +159,7 @@ class NewProfileRoute extends GoRouteData {
   }
 }
 
-class ProfileDetailsRoute extends GoRouteData {
+class ProfileDetailsRoute extends GoRouteData with $ProfileDetailsRoute {
   const ProfileDetailsRoute(this.id);
   final String id;
   static const name = "Profile Details";
@@ -257,25 +176,17 @@ class ProfileDetailsRoute extends GoRouteData {
   }
 }
 
-class LogsOverviewRoute extends GoRouteData {
+class LogsOverviewRoute extends GoRouteData with $LogsOverviewRoute {
   const LogsOverviewRoute();
   static const name = "Logs";
 
-  static final GlobalKey<NavigatorState>? $parentNavigatorKey = _dynamicRootKey;
-
   @override
   Page<void> buildPage(BuildContext context, GoRouterState state) {
-    if (useMobileRouter) {
-      return const MaterialPage(
-        name: name,
-        child: LogsOverviewPage(),
-      );
-    }
     return const NoTransitionPage(name: name, child: LogsOverviewPage());
   }
 }
 
-class QuickSettingsRoute extends GoRouteData {
+class QuickSettingsRoute extends GoRouteData with $QuickSettingsRoute {
   const QuickSettingsRoute();
   static const name = "Quick Settings";
 
@@ -291,39 +202,23 @@ class QuickSettingsRoute extends GoRouteData {
   }
 }
 
-class SettingsRoute extends GoRouteData {
+class SettingsRoute extends GoRouteData with $SettingsRoute {
   const SettingsRoute();
   static const name = "Settings";
 
-  static final GlobalKey<NavigatorState>? $parentNavigatorKey = _dynamicRootKey;
-
   @override
   Page<void> buildPage(BuildContext context, GoRouterState state) {
-    if (useMobileRouter) {
-      return const MaterialPage(
-        name: name,
-        child: SettingsOverviewPage(),
-      );
-    }
     return const NoTransitionPage(name: name, child: SettingsOverviewPage());
   }
 }
 
-class ConfigOptionsRoute extends GoRouteData {
+class ConfigOptionsRoute extends GoRouteData with $ConfigOptionsRoute {
   const ConfigOptionsRoute({this.section});
   final String? section;
   static const name = "Config Options";
 
-  static final GlobalKey<NavigatorState>? $parentNavigatorKey = _dynamicRootKey;
-
   @override
   Page<void> buildPage(BuildContext context, GoRouterState state) {
-    if (useMobileRouter) {
-      return MaterialPage(
-        name: name,
-        child: ConfigOptionsPage(section: section),
-      );
-    }
     return NoTransitionPage(
       name: name,
       child: ConfigOptionsPage(section: section),
@@ -331,36 +226,25 @@ class ConfigOptionsRoute extends GoRouteData {
   }
 }
 
-class PerAppProxyRoute extends GoRouteData {
-  const PerAppProxyRoute();
-  static const name = "Per-app Proxy";
-
-  static final GlobalKey<NavigatorState> $parentNavigatorKey = rootNavigatorKey;
+class WireGuardServerRoute extends GoRouteData with $WireGuardServerRoute {
+  const WireGuardServerRoute();
+  static const name = "WireGuard Server";
 
   @override
   Page<void> buildPage(BuildContext context, GoRouterState state) {
-    return const MaterialPage(
-      fullscreenDialog: true,
+    return const NoTransitionPage(
       name: name,
-      child: PerAppProxyPage(),
+      child: WireGuardServerPage(),
     );
   }
 }
 
-class AboutRoute extends GoRouteData {
+class AboutRoute extends GoRouteData with $AboutRoute {
   const AboutRoute();
   static const name = "About";
 
-  static final GlobalKey<NavigatorState>? $parentNavigatorKey = _dynamicRootKey;
-
   @override
   Page<void> buildPage(BuildContext context, GoRouterState state) {
-    if (useMobileRouter) {
-      return const MaterialPage(
-        name: name,
-        child: AboutPage(),
-      );
-    }
     return const NoTransitionPage(name: name, child: AboutPage());
   }
 }

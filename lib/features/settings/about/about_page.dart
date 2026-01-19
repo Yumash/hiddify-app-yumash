@@ -6,11 +6,7 @@ import 'package:hiddify/core/app_info/app_info_provider.dart';
 import 'package:hiddify/core/directories/directories_provider.dart';
 import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/model/constants.dart';
-import 'package:hiddify/core/model/failures.dart';
 import 'package:hiddify/core/widget/adaptive_icon.dart';
-import 'package:hiddify/features/app_update/notifier/app_update_notifier.dart';
-import 'package:hiddify/features/app_update/notifier/app_update_state.dart';
-import 'package:hiddify/features/app_update/widget/new_version_dialog.dart';
 import 'package:hiddify/features/common/nested_app_bar.dart';
 import 'package:hiddify/gen/assets.gen.dart';
 import 'package:hiddify/utils/utils.dart';
@@ -23,56 +19,6 @@ class AboutPage extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final t = ref.watch(translationsProvider);
     final appInfo = ref.watch(appInfoProvider).requireValue;
-    final appUpdate = ref.watch(appUpdateNotifierProvider);
-
-    ref.listen(
-      appUpdateNotifierProvider,
-      (_, next) async {
-        if (!context.mounted) return;
-        switch (next) {
-          case AppUpdateStateAvailable(:final versionInfo) ||
-                AppUpdateStateIgnored(:final versionInfo):
-            return NewVersionDialog(
-              appInfo.presentVersion,
-              versionInfo,
-              canIgnore: false,
-            ).show(context);
-          case AppUpdateStateError(:final error):
-            return CustomToast.error(t.presentShortError(error)).show(context);
-          case AppUpdateStateNotAvailable():
-            return CustomToast.success(t.appUpdate.notAvailableMsg)
-                .show(context);
-        }
-      },
-    );
-
-    final conditionalTiles = [
-      if (appInfo.release.allowCustomUpdateChecker)
-        ListTile(
-          title: Text(t.about.checkForUpdate),
-          trailing: switch (appUpdate) {
-            AppUpdateStateChecking() => const SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(),
-              ),
-            _ => const Icon(FluentIcons.arrow_sync_24_regular),
-          },
-          onTap: () async {
-            await ref.read(appUpdateNotifierProvider.notifier).check();
-          },
-        ),
-      if (PlatformUtils.isDesktop)
-        ListTile(
-          title: Text(t.settings.general.openWorkingDir),
-          trailing: const Icon(FluentIcons.open_folder_24_regular),
-          onTap: () async {
-            final path =
-                ref.watch(appDirectoriesProvider).requireValue.workingDir.uri;
-            await UriUtils.tryLaunch(path);
-          },
-        ),
-    ];
 
     return Scaffold(
       body: CustomScrollView(
@@ -109,12 +55,15 @@ class AboutPage extends HookConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        t.general.appTitle,
+                        Constants.appName,
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                       const Gap(4),
                       Text(
-                        "${t.about.version} ${appInfo.presentVersion}",
+                        "v${appInfo.presentVersion}",
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
                       ),
                     ],
                   ),
@@ -125,8 +74,103 @@ class AboutPage extends HookConsumerWidget {
           SliverList(
             delegate: SliverChildListDelegate(
               [
-                ...conditionalTiles,
-                if (conditionalTiles.isNotEmpty) const Divider(),
+                ListTile(
+                  title: Text(t.settings.general.openWorkingDir),
+                  trailing: const Icon(FluentIcons.open_folder_24_regular),
+                  onTap: () async {
+                    final path =
+                        ref.watch(appDirectoriesProvider).requireValue.workingDir.uri;
+                    await UriUtils.tryLaunch(path);
+                  },
+                ),
+                const Divider(),
+                // Fork modifications info
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            t.about.yumash.title,
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const Gap(12),
+                          Text(
+                            '${t.about.yumash.added}:',
+                            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                          const Gap(4),
+                          Text('• ${t.about.yumash.featureDualCore}'),
+                          Text('• ${t.about.yumash.featureHiddifyManager}'),
+                          Text('• ${t.about.yumash.featureTlsTricks}'),
+                          Text('• ${t.about.yumash.featureBypassRu}'),
+                          Text('• ${t.about.yumash.featureBlockAds}'),
+                          Text('• ${t.about.yumash.featureRulesetCache}'),
+                          Text('• ${t.about.yumash.featureProcessPicker}'),
+                          Text('• ${t.about.yumash.featureProviderButtons}'),
+                          Text('• ${t.about.yumash.featurePortable}'),
+                          Text('• ${t.about.yumash.featureTunCgnat}'),
+                          const Gap(12),
+                          Text(
+                            '${t.about.yumash.improved}:',
+                            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                              color: Theme.of(context).colorScheme.tertiary,
+                            ),
+                          ),
+                          const Gap(4),
+                          Text('• ${t.about.yumash.improvedSingbox}'),
+                          Text('• ${t.about.yumash.improvedHotSwitch}'),
+                          Text('• ${t.about.yumash.improvedFixedWindow}'),
+                          const Gap(12),
+                          Text(
+                            '${t.about.yumash.removed}:',
+                            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                              color: Theme.of(context).colorScheme.error,
+                            ),
+                          ),
+                          const Gap(4),
+                          Text('• ${t.about.yumash.removedPlatforms}'),
+                          Text('• ${t.about.yumash.removedIpv6}'),
+                          Text('• ${t.about.yumash.removedWarp}'),
+                          Text('• ${t.about.yumash.removedClash}'),
+                          Text('• ${t.about.yumash.removedExtensions}'),
+                          Text('• ${t.about.yumash.removedAutoupdate}'),
+                          Text('• ${t.about.yumash.removedLocales}'),
+                          const Gap(16),
+                          Text(
+                            '${t.about.yumash.donate}:',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const Gap(8),
+                          _DonationWallet(
+                            label: t.about.yumash.donateBtc,
+                            address: Constants.donationBtc,
+                          ),
+                          const Gap(4),
+                          _DonationWallet(
+                            label: t.about.yumash.donateUsdt,
+                            address: Constants.donationUsdtTrc20,
+                          ),
+                          const Gap(4),
+                          _DonationWallet(
+                            label: t.about.yumash.donateTon,
+                            address: Constants.donationTon,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const Divider(),
                 ListTile(
                   title: Text(t.about.sourceCode),
                   trailing: const Icon(FluentIcons.open_24_regular),
@@ -137,11 +181,11 @@ class AboutPage extends HookConsumerWidget {
                   },
                 ),
                 ListTile(
-                  title: Text(t.about.telegramChannel),
+                  title: Text(t.about.originalProject),
                   trailing: const Icon(FluentIcons.open_24_regular),
                   onTap: () async {
                     await UriUtils.tryLaunch(
-                      Uri.parse(Constants.telegramChannelUrl),
+                      Uri.parse(Constants.originalGithubUrl),
                     );
                   },
                 ),
@@ -167,6 +211,72 @@ class AboutPage extends HookConsumerWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _DonationWallet extends StatelessWidget {
+  const _DonationWallet({
+    required this.label,
+    required this.address,
+  });
+
+  final String label;
+  final String address;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return InkWell(
+      onTap: () {
+        Clipboard.setData(ClipboardData(text: address));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('$label copied'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      },
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              FluentIcons.copy_24_regular,
+              size: 16,
+              color: theme.colorScheme.primary,
+            ),
+            const Gap(8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: theme.colorScheme.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    address,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontFamily: 'monospace',
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

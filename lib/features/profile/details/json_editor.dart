@@ -1,11 +1,8 @@
-library json_editor_flutter;
 
-import 'dart:convert';
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math';
-import 'dart:ui';
 
-import 'package:dartx/dartx.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -49,9 +46,8 @@ const Map<String, Map<String, dynamic>> protocolSchemaValues = {
     "type": "xray",
     "tag": "xray-out",
     "xray_outbound_raw": {},
-    "xray_fragment": {"packets": "tlshello", "interval": "1-10", "length": "1-10"}
+    "xray_fragment": {"packets": "tlshello", "interval": "1-10", "length": "1-10"},
   },
-  "warp": {"type": "custom", "key": "", "host": "", "port": 808, "fake_packets": "1-10", "fake_packets_size": "1-10", "fake_packets_delay": "1-10", "fake_packets_mode": "m4"},
   "vless": {
     "type": "vless",
     "tag": "vless-out",
@@ -107,7 +103,7 @@ const Map<String, Map<String, dynamic>> protocolSchemaValues = {
     "password": "goofy_ahh_password",
     "tls": {
       "enabled": true,
-    }
+    },
   },
   "shadowsocks": {
     "type": "shadowsocks",
@@ -159,7 +155,7 @@ const Map<String, Map<String, dynamic>> protocolSchemaValues = {
     "fake_packets": "1-10",
     "fake_packets_size": "1-10",
     "fake_packets_delay": "1-10",
-    "fake_packets_mode": "m4"
+    "fake_packets_mode": "m4",
   },
   "tuic": {
     "type": "tuic",
@@ -191,16 +187,16 @@ const Map<String, Map<String, dynamic>> protocolSchemaValues = {
 const Map<String, Map<String, Map<String, dynamic>>> exampleSchemaValues = {
   "config.outbounds.transport": {
     "browser user-agent": {
-      "header": {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0"}
-    }
+      "header": {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0"},
+    },
   },
   "config.outbounds.tls": {
     "fragment": {
-      "tls_fragment": {"enabled": true, "size": "1-10", "sleep": "1-10"}
+      "tls_fragment": {"enabled": true, "size": "1-10", "sleep": "1-10"},
     },
     "utls": {
-      "utls": {"enabled": true, "fingerprint": "chrome"}
-    }
+      "utls": {"enabled": true, "fingerprint": "chrome"},
+    },
   },
   "config.outbounds": {
     "multiplex": {
@@ -211,7 +207,7 @@ const Map<String, Map<String, Map<String, dynamic>>> exampleSchemaValues = {
         "min_streams": 4,
         "max_streams": 0,
         "padding": false,
-        "brutal": {"enabled": true, "up_mbps": 100, "down_mbps": 100}
+        "brutal": {"enabled": true, "up_mbps": 100, "down_mbps": 100},
       },
     },
     "reality": {
@@ -221,7 +217,7 @@ const Map<String, Map<String, Map<String, dynamic>>> exampleSchemaValues = {
         "min_version": "",
         "max_version": "",
         "utls": {"enabled": true, "fingerprint": "chrome"},
-        "reality": {"enabled": true, "public_key": "", "short_id": ""}
+        "reality": {"enabled": true, "public_key": "", "short_id": ""},
       },
     },
     "tls": {
@@ -234,25 +230,25 @@ const Map<String, Map<String, Map<String, dynamic>>> exampleSchemaValues = {
         "alpn": [],
         "min_version": "",
         "max_version": "",
-        "tls_fragment": {"enabled": false, "size": "1-10", "sleep": "1-10"}
+        "tls_fragment": {"enabled": false, "size": "1-10", "sleep": "1-10"},
       },
     },
     "websocket": {
-      "transport": {"type": "ws", "path": "", "headers": {}, "max_early_data": 0, "early_data_header_name": ""}
+      "transport": {"type": "ws", "path": "", "headers": {}, "max_early_data": 0, "early_data_header_name": ""},
     },
     "grpc": {
-      "transport": {"type": "grpc", "service_name": "TunService", "idle_timeout": "15s", "ping_timeout": "15s", "permit_without_stream": false}
+      "transport": {"type": "grpc", "service_name": "TunService", "idle_timeout": "15s", "ping_timeout": "15s", "permit_without_stream": false},
     },
     "quic": {
-      "transport": {"type": "quic"}
+      "transport": {"type": "quic"},
     },
     "http": {
-      "transport": {"type": "http", "host": [], "path": "", "method": "", "headers": {}, "idle_timeout": "15s", "ping_timeout": "15s"}
+      "transport": {"type": "http", "host": [], "path": "", "method": "", "headers": {}, "idle_timeout": "15s", "ping_timeout": "15s"},
     },
     "httpupgrade": {
-      "transport": {"type": "httpupgrade", "host": "", "path": "", "headers": {}}
+      "transport": {"type": "httpupgrade", "host": "", "path": "", "headers": {}},
     },
-  }
+  },
 };
 
 const Map<String, List<String>> possibleValues = {
@@ -284,7 +280,7 @@ const Map<String, List<String>> possibleValues = {
     "block",
     "socks",
     "http",
-  ]
+  ],
 };
 
 /// Edit your JSON object with this Widget. Create, edit and format objects
@@ -417,7 +413,7 @@ class _JsonEditorState extends State<JsonEditor> {
 
   Map<String, bool> getExpandedParents() {
     final map = <String, bool>{};
-    for (var key in widget.expandedObjects) {
+    for (final key in widget.expandedObjects) {
       if (key is List) {
         final newExpandList = ["config", ...key];
         for (int i = newExpandList.length - 1; i > 0; i--) {
@@ -457,9 +453,9 @@ class _JsonEditorState extends State<JsonEditor> {
     });
   }
 
-  void copyData() async {
+  Future<void> copyData() async {
     await Clipboard.setData(
-      ClipboardData(text: JsonEncoder.withIndent(' ').convert(_data)),
+      ClipboardData(text: const JsonEncoder.withIndent(' ').convert(_data)),
     );
   }
 
@@ -475,10 +471,10 @@ class _JsonEditorState extends State<JsonEditor> {
     return needsRebuilding;
   }
 
-  void findMatchingKeys(data, String text, List nestedParents) {
+  void findMatchingKeys(Object? data, String text, List<dynamic> nestedParents) {
     if (data is Map) {
       final keys = data.keys.toList();
-      for (var key in keys) {
+      for (final key in keys) {
         final keyName = key.toString();
         if (keyName.toLowerCase().contains(text) || (data[key] is String && data[key].toString().toLowerCase().contains(text))) {
           _results = _results! + 1;
@@ -506,7 +502,7 @@ class _JsonEditorState extends State<JsonEditor> {
   void onSearch(String text) {
     if (_searchTimer?.isActive ?? false) _searchTimer?.cancel();
 
-    _searchTimer = Timer(widget.searchDuration, () async {
+    _searchTimer = Timer(widget.searchDuration, () {
       _matchedKeys.clear();
       _matchedKeysLocation.clear();
       _focusedKey = null;
@@ -533,7 +529,7 @@ class _JsonEditorState extends State<JsonEditor> {
     void calculateOffset(data, List parents, List toFind) {
       if (keyFound) return;
       if (data is Map) {
-        for (var entry in data.entries) {
+        for (final entry in data.entries) {
           if (keyFound) return;
           offset++;
           final newList = [...parents, entry.key];
@@ -598,9 +594,9 @@ class _JsonEditorState extends State<JsonEditor> {
     scrollTo(_focusedKey!);
   }
 
-  void expandAllObjects(data, List expandedList) {
+  void expandAllObjects(Object? data, List<dynamic> expandedList) {
     if (data is Map) {
-      for (var entry in data.entries) {
+      for (final entry in data.entries) {
         if (entry.value is Map || entry.value is List) {
           final newList = [...expandedList, entry.key];
           _expandedObjects[newList.toString()] = true;
@@ -664,7 +660,7 @@ class _JsonEditorState extends State<JsonEditor> {
                       ? const Border(
                           bottom: BorderSide(color: Colors.red, width: 2),
                         )
-                      : null),
+                      : null,),
               child: Padding(
                 padding: const EdgeInsets.symmetric(
                   vertical: 6,
@@ -802,7 +798,6 @@ class _JsonEditorState extends State<JsonEditor> {
                   controller: _controller,
                   onChanged: parseData,
                   maxLines: null,
-                  minLines: null,
                   expands: true,
                   textAlignVertical: TextAlignVertical.top,
                   decoration: const InputDecoration(
@@ -853,7 +848,7 @@ class _Holder extends StatefulWidget {
     //     ? '.${parentObject['type']}'
     //     : '';
 
-    return '$basePath';
+    return basePath;
   }
 
   @override
@@ -875,47 +870,54 @@ class _HolderState extends State<_Holder> {
   }
 
   void onSelected(_OptionItems selectedItem) {
+    final parentObj = widget.parentObject;
+    final data = widget.data;
+
     if (selectedItem == "delete") {
-      if (widget.parentObject is Map) {
-        widget.parentObject.remove(widget.keyName);
-      } else {
-        widget.parentObject.removeAt(widget.keyName);
+      if (parentObj is Map) {
+        parentObj.remove(widget.keyName);
+      } else if (parentObj is List) {
+        parentObj.removeAt(widget.keyName as int);
       }
 
       widget.setState(() {});
     } else if (selectedItem == "map") {
-      if (widget.data is Map) {
-        widget.data[_newKey] = Map<String, dynamic>();
-      } else {
-        widget.data.add(Map<String, dynamic>());
+      if (data is Map) {
+        data[_newKey] = <String, dynamic>{};
+      } else if (data is List) {
+        data.add(<String, dynamic>{});
       }
 
       setState(() {});
       widget.onChanged();
     } else if (exampleSchemaValues.containsKey(selectedItem.split("___")[0])) {
       final jsonItem = exampleSchemaValues[selectedItem.split("___")[0]]![selectedItem.split("___")[1]]!;
-      for (final key in jsonItem.keys) {
-        widget.data[key] = jsonDecode(jsonEncode(jsonItem[key]));
+      if (data is Map) {
+        for (final key in jsonItem.keys) {
+          data[key] = jsonDecode(jsonEncode(jsonItem[key]));
+        }
       }
 
       setState(() {});
     } else if (protocolSchemaValues.containsKey(selectedItem)) {
       final jsonItem = protocolSchemaValues[selectedItem]!;
-      widget.data.add(jsonDecode(jsonEncode(jsonItem)));
+      if (data is List) {
+        data.add(jsonDecode(jsonEncode(jsonItem)));
+      }
       setState(() {});
     } else if (selectedItem == "list") {
-      if (widget.data is Map) {
-        widget.data[_newKey] = [];
-      } else {
-        widget.data.add([]);
+      if (data is Map) {
+        data[_newKey] = [];
+      } else if (data is List) {
+        data.add([]);
       }
 
       setState(() {});
     } else {
-      if (widget.data is Map) {
-        widget.data[_newKey] = _newDataValue[selectedItem];
-      } else {
-        widget.data.add(_newDataValue[selectedItem]);
+      if (data is Map) {
+        data[_newKey] = _newDataValue[selectedItem];
+      } else if (data is List) {
+        data.add(_newDataValue[selectedItem]);
       }
 
       setState(() {});
@@ -925,15 +927,23 @@ class _HolderState extends State<_Holder> {
   }
 
   void onKeyChanged(Object key) {
-    final val = widget.parentObject.remove(widget.keyName);
-    widget.parentObject[key] = val;
+    final parentObj = widget.parentObject;
+    if (parentObj is Map) {
+      final val = parentObj.remove(widget.keyName);
+      parentObj[key] = val;
+    }
 
     widget.onChanged();
     widget.setState(() {});
   }
 
   void onValueChanged(Object value) {
-    widget.parentObject[widget.keyName] = value;
+    final parentObj = widget.parentObject;
+    if (parentObj is Map) {
+      parentObj[widget.keyName] = value;
+    } else if (parentObj is List && widget.keyName is int) {
+      parentObj[widget.keyName as int] = value;
+    }
 
     widget.onChanged();
   }
@@ -951,22 +961,19 @@ class _HolderState extends State<_Holder> {
     var res = "{";
     if (data is Map<String, dynamic>) {
       if (widget.expandedObjects[widget.allParents.toString()] ?? false) return "";
-      final content = data as Map<String, dynamic>;
-      //res += "${data.length}";
-      if (content["type"] != null) {
-        res += "${content["type"]}";
+      if (data["type"] != null) {
+        res += "${data["type"]}";
       }
-      if (content["tag"] != null) {
-        res += " [${content["tag"]}]";
+      if (data["tag"] != null) {
+        res += " [${data["tag"]}]";
       } else {
-        final d = "$content";
+        final d = "$data";
         res += " [${d.substring(0, min(20, d.length))}...]";
       }
     } else if (data is List) {
-      final content = data as List;
-      res += "${content.length}";
+      res += "${data.length}";
     }
-    return res + "}";
+    return "$res}";
   }
 
   @override
@@ -975,19 +982,19 @@ class _HolderState extends State<_Holder> {
       final mapWidget = <Widget>[];
       final widgetData = widget.data as Map<String, dynamic>;
       final List<String> keys = widgetData.keys.toList();
-      for (var key in keys) {
+      for (final key in keys) {
         mapWidget.add(_Holder(
           key: Key(key),
-          data: widget.data[key],
+          data: widgetData[key],
           keyName: key,
           onChanged: widget.onChanged,
-          parentObject: widget.data,
+          parentObject: widgetData,
           paddingLeft: widget.paddingLeft + _space,
           setState: setState,
           matchedKeys: widget.matchedKeys,
           allParents: [...widget.allParents, key],
           expandedObjects: widget.expandedObjects,
-        ));
+        ),);
       }
 
       return Column(
@@ -1059,13 +1066,13 @@ class _HolderState extends State<_Holder> {
           keyName: i,
           data: widgetData[i],
           onChanged: widget.onChanged,
-          parentObject: widget.data,
+          parentObject: widgetData,
           paddingLeft: widget.paddingLeft + _space,
           setState: setState,
           matchedKeys: widget.matchedKeys,
           allParents: [...widget.allParents, i],
           expandedObjects: widget.expandedObjects,
-        ));
+        ),);
       }
 
       return Column(
@@ -1098,7 +1105,7 @@ class _HolderState extends State<_Holder> {
                   ),
                   _textSpacer,
                   Text(
-                    "[${widget.data.length}]",
+                    "[${widgetData.length}]",
                     style: _textStyle,
                   ),
                 ] else
@@ -1114,7 +1121,7 @@ class _HolderState extends State<_Holder> {
                           "${widget.keyName}",
                         ),
                         _textSpacer,
-                        Text("[${widget.data.length}]", style: _textStyle),
+                        Text("[${widgetData.length}]", style: _textStyle),
                       ],
                     ),
                   ),
@@ -1280,8 +1287,7 @@ class _ReplaceTextWithFieldState extends State<_ReplaceTextWithField> {
             child: DropdownButton<String>(
               hint: Text('Select ${widget.keyPath.replaceAll("config.outbounds", "")}'),
               value: _text,
-              icon: Icon(Icons.arrow_downward),
-              iconSize: 24,
+              icon: const Icon(Icons.arrow_downward),
               elevation: 16,
               underline: Container(
                 height: 2,
@@ -1384,7 +1390,7 @@ class _Options<T> extends StatelessWidget {
                 SizedBox(width: 10),
                 Text("Insert", style: TextStyle(fontSize: 14)),
               ],
-            )),
+            ),),
           if (keyPath != "config" && T == List)
             const _PopupMenuWidget(Row(
               mainAxisSize: MainAxisSize.min,
@@ -1394,20 +1400,20 @@ class _Options<T> extends StatelessWidget {
                 SizedBox(width: 10),
                 Text("Append", style: TextStyle(fontSize: 14)),
               ],
-            )),
+            ),),
           if (keyPath != "config" && (T == Map || T == List)) ...[
             if (keyPath == "config.outbounds" && T == List) ...[
               for (final String key in protocolSchemaValues.keys) ...{
                 PopupMenuItem<_OptionItems>(
                   height: _popupMenuHeight,
-                  padding: EdgeInsets.only(left: _popupMenuItemPadding),
+                  padding: const EdgeInsets.only(left: _popupMenuItemPadding),
                   value: key,
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.data_object),
-                      SizedBox(width: 10),
-                      Text(key, style: TextStyle(fontSize: 14)),
+                      const Icon(Icons.data_object),
+                      const SizedBox(width: 10),
+                      Text(key, style: const TextStyle(fontSize: 14)),
                     ],
                   ),
                 ),
@@ -1420,14 +1426,14 @@ class _Options<T> extends StatelessWidget {
                   for (final String key2 in exampleSchemaValues[key]!.keys) ...{
                     PopupMenuItem<_OptionItems>(
                       height: _popupMenuHeight,
-                      padding: EdgeInsets.only(left: _popupMenuItemPadding),
-                      value: key + "___" + key2,
+                      padding: const EdgeInsets.only(left: _popupMenuItemPadding),
+                      value: "${key}___$key2",
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.data_object),
-                          SizedBox(width: 10),
-                          Text(key2, style: TextStyle(fontSize: 14)),
+                          const Icon(Icons.data_object),
+                          const SizedBox(width: 10),
+                          Text(key2, style: const TextStyle(fontSize: 14)),
                         ],
                       ),
                     ),
@@ -1531,10 +1537,10 @@ class _PopupMenuWidget extends PopupMenuEntry<Never> {
   final Widget child;
 
   @override
-  final double height = _popupMenuHeight;
+  double get height => _popupMenuHeight;
 
   @override
-  bool represents(_) => false;
+  bool represents(void value) => false;
 
   @override
   State<_PopupMenuWidget> createState() => _PopupMenuWidgetState();
@@ -1573,12 +1579,12 @@ class _SearchField extends StatelessWidget {
             decoration: InputDecoration(
               hintText: "Search",
               hintStyle: Theme.of(context).textTheme.bodySmall,
-              constraints: BoxConstraints(maxWidth: 100),
+              constraints: const BoxConstraints(maxWidth: 100),
               border: InputBorder.none,
               // fillColor: Colors.transparent,
               // filled: true,
               isDense: true,
-              contentPadding: EdgeInsets.all(3),
+              contentPadding: const EdgeInsets.all(3),
               focusedBorder: InputBorder.none,
               // hoverColor: Colors.transparent,
             ),
@@ -1619,51 +1625,52 @@ class _SearchField extends StatelessWidget {
 List<String> _getSpace(int count) {
   if (count == 0) return ['', '  '];
 
-  String space = '';
+  final spaceBuffer = StringBuffer();
   for (int i = 0; i < count; i++) {
-    space += '  ';
+    spaceBuffer.write('  ');
   }
+  final space = spaceBuffer.toString();
   return [space, '$space  '];
 }
 
-String _stringifyData(data, int spacing, [bool isLast = false]) {
-  String str = '';
+String _stringifyData(Object? data, int spacing, [bool isLast = false]) {
   final spaceList = _getSpace(spacing);
   final objectSpace = spaceList[0];
   final dataSpace = spaceList[1];
 
   if (data is Map) {
-    str += '$objectSpace{';
-    str += '\n';
+    final buffer = StringBuffer();
+    buffer.write('$objectSpace{');
+    buffer.write('\n');
     final keys = data.keys.toList();
     for (int i = 0; i < keys.length; i++) {
-      str += '$dataSpace"${keys[i]}": ${_stringifyData(data[keys[i]], spacing + 1, i == keys.length - 1)}';
-      str += '\n';
+      buffer.write('$dataSpace"${keys[i]}": ${_stringifyData(data[keys[i]], spacing + 1, i == keys.length - 1)}');
+      buffer.write('\n');
     }
-    str += '$objectSpace}';
-    if (!isLast) str += ',';
+    buffer.write('$objectSpace}');
+    if (!isLast) buffer.write(',');
+    return buffer.toString();
   } else if (data is List) {
-    str += '$objectSpace[';
-    str += '\n';
+    final buffer = StringBuffer();
+    buffer.write('$objectSpace[');
+    buffer.write('\n');
     for (int i = 0; i < data.length; i++) {
       final item = data[i];
       if (item is Map || item is List) {
-        str += _stringifyData(item, spacing + 1, i == data.length - 1);
+        buffer.write(_stringifyData(item, spacing + 1, i == data.length - 1));
       } else {
-        str += '$dataSpace${_stringifyData(item, spacing + 1, i == data.length - 1)}';
+        buffer.write('$dataSpace${_stringifyData(item, spacing + 1, i == data.length - 1)}');
       }
-      str += '\n';
+      buffer.write('\n');
     }
-    str += '$objectSpace]';
-    if (!isLast) str += ',';
+    buffer.write('$objectSpace]');
+    if (!isLast) buffer.write(',');
+    return buffer.toString();
   } else {
     if (data is String) {
-      str = '"$data"';
+      return isLast ? '"$data"' : '"$data",';
     } else {
-      str = '$data';
+      return isLast ? '$data' : '$data,';
     }
-    if (!isLast) str += ',';
   }
-
-  return str;
 }

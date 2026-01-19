@@ -6,14 +6,17 @@ import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/model/optional_range.dart';
 import 'package:hiddify/core/model/region.dart';
 import 'package:hiddify/core/notification/in_app_notification_controller.dart';
+import 'package:hiddify/core/router/routes.dart';
 import 'package:hiddify/core/widget/adaptive_icon.dart';
 import 'package:hiddify/core/widget/tip_card.dart';
 import 'package:hiddify/features/common/confirmation_dialogs.dart';
 import 'package:hiddify/features/common/nested_app_bar.dart';
 import 'package:hiddify/features/config_option/data/config_option_repository.dart';
 import 'package:hiddify/features/config_option/notifier/config_option_notifier.dart';
-import 'package:hiddify/features/config_option/overview/warp_options_widgets.dart';
+import 'package:hiddify/features/config_option/widget/exclusion_list_dialog.dart';
 import 'package:hiddify/features/config_option/widget/preference_tile.dart';
+import 'package:hiddify/features/config_option/widget/process_picker_dialog.dart';
+import 'package:hiddify/features/config_option/widget/reconnect_indicator.dart';
 import 'package:hiddify/features/log/model/log_level.dart';
 import 'package:hiddify/features/settings/widgets/sections_widgets.dart';
 import 'package:hiddify/features/settings/widgets/settings_input_dialog.dart';
@@ -23,14 +26,11 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:humanizer/humanizer.dart';
 
 enum ConfigOptionSection {
-  warp,
   fragment;
 
-  static final _warpKey = GlobalKey(debugLabel: "warp-section-key");
   static final _fragmentKey = GlobalKey(debugLabel: "fragment-section-key");
 
   GlobalKey get key => switch (this) {
-        ConfigOptionSection.warp => _warpKey,
         ConfigOptionSection.fragment => _fragmentKey,
       };
 }
@@ -82,7 +82,7 @@ class ConfigOptionsPage extends HookConsumerWidget {
                 itemBuilder: (context) {
                   return [
                     PopupMenuItem(
-                      onTap: () async => ref.read(configOptionNotifierProvider.notifier).exportJsonToClipboard().then((success) {
+                      onTap: () => ref.read(configOptionProvider.notifier).exportJsonToClipboard().then((success) {
                         if (success) {
                           ref.read(inAppNotificationControllerProvider).showSuccessToast(
                                 t.general.clipboardExportSuccessMsg,
@@ -90,17 +90,6 @@ class ConfigOptionsPage extends HookConsumerWidget {
                         }
                       }),
                       child: Text(t.settings.exportOptions),
-                    ),
-                    // if (ref.watch(debugModeNotifierProvider))
-                    PopupMenuItem(
-                      onTap: () async => ref.read(configOptionNotifierProvider.notifier).exportJsonToClipboard(excludePrivate: false).then((success) {
-                        if (success) {
-                          ref.read(inAppNotificationControllerProvider).showSuccessToast(
-                                t.general.clipboardExportSuccessMsg,
-                              );
-                        }
-                      }),
-                      child: Text(t.settings.exportAllOptions),
                     ),
                     PopupMenuItem(
                       onTap: () async {
@@ -110,7 +99,7 @@ class ConfigOptionsPage extends HookConsumerWidget {
                           message: t.settings.importOptionsMsg,
                         );
                         if (shouldImport) {
-                          await ref.read(configOptionNotifierProvider.notifier).importFromClipboard();
+                          await ref.read(configOptionProvider.notifier).importFromClipboard();
                         }
                       },
                       child: Text(t.settings.importOptions),
@@ -118,7 +107,7 @@ class ConfigOptionsPage extends HookConsumerWidget {
                     PopupMenuItem(
                       child: Text(t.config.resetBtn),
                       onTap: () async {
-                        await ref.read(configOptionNotifierProvider.notifier).resetOption();
+                        await ref.read(configOptionProvider.notifier).resetOption();
                       },
                     ),
                   ];
@@ -130,7 +119,6 @@ class ConfigOptionsPage extends HookConsumerWidget {
             child: SingleChildScrollView(
               child: Column(
                 children: [
-                  TipCard(message: t.settings.experimentalMsg),
                   ChoicePreferenceWidget(
                     selected: ref.watch(ConfigOptions.logLevel),
                     preferences: ref.watch(ConfigOptions.logLevel.notifier),
@@ -141,38 +129,159 @@ class ConfigOptionsPage extends HookConsumerWidget {
 
                   const SettingsDivider(),
                   SettingsSection(t.config.section.route),
-                  ChoicePreferenceWidget(
-                    selected: ref.watch(ConfigOptions.region),
-                    preferences: ref.watch(ConfigOptions.region.notifier),
-                    choices: Region.values,
-                    title: t.settings.general.region,
-                    presentChoice: (value) => value.present(t),
-                    onChanged: (val) => ref.watch(ConfigOptions.directDnsAddress.notifier).reset(),
-                  ),
+                  // Region is fixed to Russia (ru) in this fork
                   SwitchListTile(
-                    title: Text(experimental(t.config.blockAds)),
+                    title: TitleWithReconnect(
+                      title: t.config.blockAds,
+                      helpTooltip: t.config.blockAdsTooltip,
+                    ),
+                    subtitle: Text(t.config.blockAdsHint),
                     value: ref.watch(ConfigOptions.blockAds),
                     onChanged: ref.watch(ConfigOptions.blockAds.notifier).update,
                   ),
+                  if (ref.watch(ConfigOptions.blockAds))
+                    RuleSetUrlListTile(
+                      title: t.config.blockAdsRuleSetUrls,
+                      hint: t.config.blockAdsRuleSetUrlsHint,
+                      value: ref.watch(ConfigOptions.blockAdsRuleSetUrls),
+                      emptyText: t.config.blockAdsRuleSetUrlsHint,
+                      onChanged: (v) => ref.watch(ConfigOptions.blockAdsRuleSetUrls.notifier).update(v),
+                      onReset: () => ref.watch(ConfigOptions.blockAdsRuleSetUrls.notifier).reset(),
+                    ),
                   SwitchListTile(
-                    title: Text(experimental(t.config.bypassLan)),
+                    title: TitleWithReconnect(title: t.config.bypassLan),
+                    subtitle: Text(t.config.bypassLanHint),
                     value: ref.watch(ConfigOptions.bypassLan),
                     onChanged: ref.watch(ConfigOptions.bypassLan.notifier).update,
                   ),
-                  SwitchListTile(
-                    title: Text(t.config.resolveDestination),
-                    value: ref.watch(ConfigOptions.resolveDestination),
-                    onChanged: ref.watch(ConfigOptions.resolveDestination.notifier).update,
-                  ),
-                  ChoicePreferenceWidget(
-                    selected: ref.watch(ConfigOptions.ipv6Mode),
-                    preferences: ref.watch(ConfigOptions.ipv6Mode.notifier),
-                    choices: IPv6Mode.values,
-                    title: t.config.ipv6Mode,
-                    presentChoice: (value) => value.present(t),
-                  ),
+                  // LAN bypass IP ranges (editable)
+                  if (ref.watch(ConfigOptions.bypassLan))
+                    ExclusionListTile(
+                      title: t.config.lanBypassIps,
+                      hint: t.config.lanBypassIpsHint,
+                      value: ref.watch(ConfigOptions.lanBypassIps),
+                      emptyText: t.config.lanBypassIpsDefault,
+                      onChanged: (v) => ref.watch(ConfigOptions.lanBypassIps.notifier).update(v),
+                      onReset: () => ref.watch(ConfigOptions.lanBypassIps.notifier).reset(),
+                    ),
+                  // Yumash Edition: VPN mode always enabled, show exclusion options
+                  ExclusionListTile(
+                      title: t.config.excludedDomains,
+                      hint: t.config.excludedDomainsHint,
+                      value: ref.watch(ConfigOptions.excludedDomains),
+                      emptyText: t.config.excludedDomainsHint,
+                      onChanged: (v) => ref.watch(ConfigOptions.excludedDomains.notifier).update(v),
+                      onReset: () => ref.watch(ConfigOptions.excludedDomains.notifier).reset(),
+                    ),
+                    ExclusionListTile(
+                      title: t.config.excludedIps,
+                      hint: t.config.excludedIpsHint,
+                      value: ref.watch(ConfigOptions.excludedIps),
+                      emptyText: t.config.excludedIpsHint,
+                      onChanged: (v) => ref.watch(ConfigOptions.excludedIps.notifier).update(v),
+                      onReset: () => ref.watch(ConfigOptions.excludedIps.notifier).reset(),
+                    ),
+                    ProcessPickerTile(
+                      value: ref.watch(ConfigOptions.excludedProcesses),
+                      onChanged: (v) => ref.watch(ConfigOptions.excludedProcesses.notifier).update(v),
+                      onReset: () => ref.watch(ConfigOptions.excludedProcesses.notifier).reset(),
+                    ),
+                    SwitchListTile(
+                      title: TitleWithReconnect(title: t.config.bypassRussianDomains),
+                      subtitle: Text(t.config.bypassRussianDomainsHint),
+                      value: ref.watch(ConfigOptions.bypassRussianDomains),
+                      onChanged: ref.watch(ConfigOptions.bypassRussianDomains.notifier).update,
+                    ),
+                    SwitchListTile(
+                      title: TitleWithReconnect(title: t.config.bypassRussianIps),
+                      subtitle: Text(t.config.bypassRussianIpsHint),
+                      value: ref.watch(ConfigOptions.bypassRussianIps),
+                      onChanged: ref.watch(ConfigOptions.bypassRussianIps.notifier).update,
+                    ),
+                    // Collapsible section for custom rule-set URLs
+                    ExpansionTile(
+                      title: Text(t.config.ruleSetUrlsSection),
+                      subtitle: Text(t.config.ruleSetUrlsSectionHint),
+                      children: [
+                        // Russian geosite URL (shown when bypass Russian domains is enabled)
+                        if (ref.watch(ConfigOptions.bypassRussianDomains))
+                          ValuePreferenceWidget(
+                            value: ref.watch(ConfigOptions.russianGeositeUrl),
+                            preferences: ref.watch(ConfigOptions.russianGeositeUrl.notifier),
+                            title: t.config.russianGeositeUrl,
+                          ),
+                        // Russian geoip URL (shown when bypass Russian IPs is enabled)
+                        if (ref.watch(ConfigOptions.bypassRussianIps))
+                          ValuePreferenceWidget(
+                            value: ref.watch(ConfigOptions.russianGeoipUrl),
+                            preferences: ref.watch(ConfigOptions.russianGeoipUrl.notifier),
+                            title: t.config.russianGeoipUrl,
+                          ),
+                        // Block ads rule-set URLs (always visible in this section)
+                        RuleSetUrlListTile(
+                          title: t.config.blockAdsRuleSetUrls,
+                          hint: t.config.blockAdsRuleSetUrlsHint,
+                          value: ref.watch(ConfigOptions.blockAdsRuleSetUrls),
+                          emptyText: t.config.blockAdsRuleSetUrlsHint,
+                          onChanged: (v) => ref.watch(ConfigOptions.blockAdsRuleSetUrls.notifier).update(v),
+                          onReset: () => ref.watch(ConfigOptions.blockAdsRuleSetUrls.notifier).reset(),
+                        ),
+                        // Rule-set update interval
+                        ListTile(
+                          title: TitleWithReconnect(title: t.config.ruleSetUpdateInterval),
+                          subtitle: Text(_formatDays(ref.watch(ConfigOptions.ruleSetUpdateInterval).inDays, t)),
+                          onTap: () async {
+                            final interval = await SettingsSliderDialog(
+                              title: t.config.ruleSetUpdateInterval,
+                              initialValue: ref.watch(ConfigOptions.ruleSetUpdateInterval).inDays.coerceIn(1, 30).toDouble(),
+                              onReset: ref.read(ConfigOptions.ruleSetUpdateInterval.notifier).reset,
+                              min: 1,
+                              max: 30,
+                              divisions: 29,
+                              labelGen: (value) => _formatDays(value.toInt(), t),
+                            ).show(context);
+                            if (interval == null) return;
+                            await ref.read(ConfigOptions.ruleSetUpdateInterval.notifier).update(Duration(days: interval.toInt()));
+                          },
+                        ),
+                        // Force update rule-sets button
+                        ListTile(
+                          leading: const Icon(Icons.refresh),
+                          title: TitleWithReconnect(title: t.config.forceUpdateRuleSets),
+                          subtitle: Text(t.config.forceUpdateRuleSetsHint),
+                          onTap: () async {
+                            ref.read(inAppNotificationControllerProvider).showInfoToast(t.config.ruleSetUpdating);
+                            // Force update by clearing cache - requires reconnect
+                            await ref.read(configOptionProvider.notifier).clearRuleSetCache();
+                            ref.read(inAppNotificationControllerProvider).showSuccessToast(t.config.ruleSetUpdated);
+                          },
+                        ),
+                      ],
+                    ),
                   const SettingsDivider(),
                   SettingsSection(t.config.section.dns),
+                  // DNS explanation for better understanding
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(Icons.info_outline, size: 20),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                t.config.section.dnsExplanation,
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                   ValuePreferenceWidget(
                     value: ref.watch(ConfigOptions.remoteDnsAddress),
                     preferences: ref.watch(ConfigOptions.remoteDnsAddress.notifier),
@@ -197,11 +306,12 @@ class ConfigOptionsPage extends HookConsumerWidget {
                     title: t.config.directDnsDomainStrategy,
                     presentChoice: (value) => value.displayName,
                   ),
-                  SwitchListTile(
-                    title: Text(t.config.enableDnsRouting),
-                    value: ref.watch(ConfigOptions.enableDnsRouting),
-                    onChanged: ref.watch(ConfigOptions.enableDnsRouting.notifier).update,
-                  ),
+                  // DNS routing is always enabled for proper bypass functionality
+                  // SwitchListTile(
+                  //   title: TitleWithReconnect(title: t.config.enableDnsRouting),
+                  //   value: ref.watch(ConfigOptions.enableDnsRouting),
+                  //   onChanged: ref.watch(ConfigOptions.enableDnsRouting.notifier).update,
+                  // ),
                   // const SettingsDivider(),
                   // SettingsSection(experimental(t.config.section.mux)),
                   // SwitchListTile(
@@ -227,29 +337,41 @@ class ConfigOptionsPage extends HookConsumerWidget {
                   // ),
                   const SettingsDivider(),
                   SettingsSection(t.config.section.inbound),
-                  ChoicePreferenceWidget(
-                    selected: ref.watch(ConfigOptions.serviceMode),
-                    preferences: ref.watch(ConfigOptions.serviceMode.notifier),
-                    choices: ServiceMode.choices,
-                    title: t.config.serviceMode,
-                    presentChoice: (value) => value.present(t),
+                  // Yumash Edition: VPN mode is the only mode, show as info
+                  ListTile(
+                    title: Text(t.config.serviceMode),
+                    subtitle: Text(t.config.serviceModes.tun),
+                    leading: const Icon(Icons.vpn_key),
                   ),
                   SwitchListTile(
-                    title: Text(t.config.strictRoute),
+                    title: TitleWithReconnect(
+                      title: t.config.strictRoute,
+                      helpTooltip: t.config.strictRouteTooltip,
+                    ),
+                    subtitle: Text(t.config.strictRouteHint),
                     value: ref.watch(ConfigOptions.strictRoute),
                     onChanged: ref.watch(ConfigOptions.strictRoute.notifier).update,
                   ),
-                  ChoicePreferenceWidget(
-                    selected: ref.watch(ConfigOptions.tunImplementation),
-                    preferences: ref.watch(ConfigOptions.tunImplementation.notifier),
-                    choices: TunImplementation.values,
-                    title: t.config.tunImplementation,
-                    presentChoice: (value) => value.name,
+                  // TUN implementation is hardcoded to gvisor (most stable)
+                  // ChoicePreferenceWidget(
+                  //   selected: ref.watch(ConfigOptions.tunImplementation),
+                  //   preferences: ref.watch(ConfigOptions.tunImplementation.notifier),
+                  //   choices: TunImplementation.values,
+                  //   title: t.config.tunImplementation,
+                  //   presentChoice: (value) => value.name,
+                  // ),
+                  ValuePreferenceWidget(
+                    value: ref.watch(ConfigOptions.tunAddress),
+                    preferences: ref.watch(ConfigOptions.tunAddress.notifier),
+                    title: t.config.tunAddress,
+                    subtitle: t.config.tunAddressHint,
                   ),
+                  // Network port settings with helpful hints
                   ValuePreferenceWidget(
                     value: ref.watch(ConfigOptions.mixedPort),
                     preferences: ref.watch(ConfigOptions.mixedPort.notifier),
                     title: t.config.mixedPort,
+                    subtitle: t.config.mixedPortHint,
                     inputToValue: int.tryParse,
                     digitsOnly: true,
                     validateInput: isPort,
@@ -258,6 +380,7 @@ class ConfigOptionsPage extends HookConsumerWidget {
                     value: ref.watch(ConfigOptions.tproxyPort),
                     preferences: ref.watch(ConfigOptions.tproxyPort.notifier),
                     title: t.config.tproxyPort,
+                    subtitle: t.config.tproxyPortHint,
                     inputToValue: int.tryParse,
                     digitsOnly: true,
                     validateInput: isPort,
@@ -266,24 +389,45 @@ class ConfigOptionsPage extends HookConsumerWidget {
                     value: ref.watch(ConfigOptions.localDnsPort),
                     preferences: ref.watch(ConfigOptions.localDnsPort.notifier),
                     title: t.config.localDnsPort,
+                    subtitle: t.config.localDnsPortHint,
                     inputToValue: int.tryParse,
                     digitsOnly: true,
                     validateInput: isPort,
                   ),
-                  SwitchListTile(
-                    title: Text(
-                      experimental(t.config.allowConnectionFromLan),
+                  ValuePreferenceWidget(
+                    value: ref.watch(ConfigOptions.mtu),
+                    preferences: ref.watch(ConfigOptions.mtu.notifier),
+                    title: t.config.mtu,
+                    inputToValue: int.tryParse,
+                    digitsOnly: true,
+                  ),
+                  // Allow connection from LAN removed - use WireGuard server for secure sharing
+                  // SwitchListTile(
+                  //   title: TitleWithReconnect(
+                  //     title: experimental(t.config.allowConnectionFromLan),
+                  //   ),
+                  //   value: ref.watch(ConfigOptions.allowConnectionFromLan),
+                  //   onChanged: ref.read(ConfigOptions.allowConnectionFromLan.notifier).update,
+                  // ),
+                  // WireGuard LAN Server
+                  ListTile(
+                    leading: const Icon(Icons.wifi_tethering),
+                    title: Text(t.config.wgServer.title),
+                    subtitle: Text(
+                      ref.watch(ConfigOptions.wgServerEnabled)
+                          ? t.config.wgServer.statusEnabled
+                          : t.config.wgServer.statusDisabled,
                     ),
-                    value: ref.watch(ConfigOptions.allowConnectionFromLan),
-                    onChanged: ref.read(ConfigOptions.allowConnectionFromLan.notifier).update,
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => const WireGuardServerRoute().go(context),
                   ),
                   const SettingsDivider(),
                   SettingsSection(
-                    experimental(t.config.section.tlsTricks),
+                    t.config.section.tlsTricks,
                     key: ConfigOptionSection._fragmentKey,
                   ),
                   SwitchListTile(
-                    title: Text(t.config.enableTlsFragment),
+                    title: TitleWithReconnect(title: t.config.enableTlsFragment),
                     value: ref.watch(ConfigOptions.enableTlsFragment),
                     onChanged: ref.watch(ConfigOptions.enableTlsFragment.notifier).update,
                   ),
@@ -304,12 +448,12 @@ class ConfigOptionsPage extends HookConsumerWidget {
                     formatInputValue: (value) => value.format(),
                   ),
                   SwitchListTile(
-                    title: Text(t.config.enableTlsMixedSniCase),
+                    title: TitleWithReconnect(title: t.config.enableTlsMixedSniCase),
                     value: ref.watch(ConfigOptions.enableTlsMixedSniCase),
                     onChanged: ref.watch(ConfigOptions.enableTlsMixedSniCase.notifier).update,
                   ),
                   SwitchListTile(
-                    title: Text(t.config.enableTlsPadding),
+                    title: TitleWithReconnect(title: t.config.enableTlsPadding),
                     value: ref.watch(ConfigOptions.enableTlsPadding),
                     onChanged: ref.watch(ConfigOptions.enableTlsPadding.notifier).update,
                   ),
@@ -322,9 +466,6 @@ class ConfigOptionsPage extends HookConsumerWidget {
                     formatInputValue: (value) => value.format(),
                   ),
                   const SettingsDivider(),
-                  SettingsSection(experimental(t.config.section.warp)),
-                  WarpOptionsTiles(key: ConfigOptionSection._warpKey),
-                  const SettingsDivider(),
                   SettingsSection(t.config.section.misc),
                   ValuePreferenceWidget(
                     value: ref.watch(ConfigOptions.connectionTestUrl),
@@ -333,38 +474,29 @@ class ConfigOptionsPage extends HookConsumerWidget {
                   ),
                   ListTile(
                     title: Text(t.config.urlTestInterval),
-                    subtitle: Text(
-                      ref.watch(ConfigOptions.urlTestInterval).toApproximateTime(isRelativeToNow: false),
-                    ),
+                    subtitle: Text(_formatMinutes(ref.watch(ConfigOptions.urlTestInterval).inMinutes, t)),
                     onTap: () async {
-                      final urlTestInterval = await SettingsSliderDialog(
+                      final urlTestInterval = await SettingsInputDialog<int>(
                         title: t.config.urlTestInterval,
-                        initialValue: ref.watch(ConfigOptions.urlTestInterval).inMinutes.coerceIn(0, 60).toDouble(),
+                        initialValue: ref.watch(ConfigOptions.urlTestInterval).inMinutes.coerceIn(1, 60),
+                        digitsOnly: true,
+                        mapTo: (value) {
+                          final minutes = int.tryParse(value);
+                          if (minutes == null || minutes < 1 || minutes > 60) return null;
+                          return minutes;
+                        },
+                        validator: (value) {
+                          final minutes = int.tryParse(value);
+                          return minutes != null && minutes >= 1 && minutes <= 60;
+                        },
+                        valueFormatter: (value) => value.toString(),
                         onReset: ref.read(ConfigOptions.urlTestInterval.notifier).reset,
-                        min: 1,
-                        max: 60,
-                        divisions: 60,
-                        labelGen: (value) => Duration(minutes: value.toInt()).toApproximateTime(isRelativeToNow: false),
                       ).show(context);
                       if (urlTestInterval == null) return;
-                      await ref.read(ConfigOptions.urlTestInterval.notifier).update(Duration(minutes: urlTestInterval.toInt()));
+                      await ref.read(ConfigOptions.urlTestInterval.notifier).update(Duration(minutes: urlTestInterval));
                     },
                   ),
-                  ValuePreferenceWidget(
-                    value: ref.watch(ConfigOptions.clashApiPort),
-                    preferences: ref.watch(ConfigOptions.clashApiPort.notifier),
-                    title: t.config.clashApiPort,
-                    validateInput: isPort,
-                    digitsOnly: true,
-                    inputToValue: int.tryParse,
-                  ),
-
-                  SwitchListTile(
-                    title: Text(experimental(t.config.useXrayCoreWhenPossible.Label)),
-                    subtitle: Text(t.config.useXrayCoreWhenPossible.Description),
-                    value: ref.watch(ConfigOptions.useXrayCoreWhenPossible),
-                    onChanged: ref.watch(ConfigOptions.useXrayCoreWhenPossible.notifier).update,
-                  ),
+                  // Xray-core auto-switching is always enabled in this fork
                   const Gap(24),
                 ],
               ),
@@ -373,5 +505,26 @@ class ConfigOptionsPage extends HookConsumerWidget {
         ],
       ),
     );
+  }
+}
+
+// Helper functions for localized time formatting
+String _formatDays(int days, TranslationsEn t) {
+  if (days == 1) {
+    return '1 ${t.config.dayOne}';
+  } else if (days >= 2 && days <= 4) {
+    return '$days ${t.config.dayFew}';
+  } else {
+    return '$days ${t.config.dayMany}';
+  }
+}
+
+String _formatMinutes(int minutes, TranslationsEn t) {
+  if (minutes == 1) {
+    return '1 ${t.config.minuteOne}';
+  } else if (minutes >= 2 && minutes <= 4) {
+    return '$minutes ${t.config.minuteFew}';
+  } else {
+    return '$minutes ${t.config.minuteMany}';
   }
 }

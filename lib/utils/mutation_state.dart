@@ -3,7 +3,6 @@ import 'package:hiddify/core/model/failures.dart';
 
 part 'mutation_state.freezed.dart';
 
-// TODO: remove
 @freezed
 class MutationState<F extends Failure> with _$MutationState<F> {
   const MutationState._();

@@ -11,7 +11,7 @@ part 'singbox_config_option.freezed.dart';
 part 'singbox_config_option.g.dart';
 
 @freezed
-class SingboxConfigOption with _$SingboxConfigOption {
+abstract class SingboxConfigOption with _$SingboxConfigOption {
   const SingboxConfigOption._();
 
   @JsonSerializable(fieldRename: FieldRename.kebab)
@@ -22,7 +22,6 @@ class SingboxConfigOption with _$SingboxConfigOption {
     required bool executeConfigAsIs,
     required LogLevel logLevel,
     required bool resolveDestination,
-    required IPv6Mode ipv6Mode,
     required String remoteDnsAddress,
     required DomainStrategy remoteDnsDomainStrategy,
     required String directDnsAddress,
@@ -33,25 +32,38 @@ class SingboxConfigOption with _$SingboxConfigOption {
     required TunImplementation tunImplementation,
     required int mtu,
     required bool strictRoute,
+    @Default('100.64.1.1/28') String tunAddress,
     required String connectionTestUrl,
     @IntervalInSecondsConverter() required Duration urlTestInterval,
-    required bool enableClashApi,
-    required int clashApiPort,
     required bool enableTun,
     required bool enableTunService,
     required bool setSystemProxy,
     required bool bypassLan,
+    @Default('192.168.0.0/16,10.0.0.0/8,172.16.0.0/12') String lanBypassIps,
     required bool allowConnectionFromLan,
+    @Default('') String excludedDomains,
+    @Default('') String excludedIps,
+    @Default('') String excludedProcesses,
+    @Default(false) bool bypassRussianDomains,
+    @Default(false) bool bypassRussianIps,
+    @Default('') String blockAdsRuleSetUrls,
+    @Default('') String russianGeositeUrl,
+    @Default('') String russianGeoipUrl,
+    @IntervalInSecondsConverter() @Default(Duration(days: 7)) Duration ruleSetUpdateInterval,
     required bool enableFakeDns,
     required bool enableDnsRouting,
     required bool independentDnsCache,
-    // required String geoipPath,
-    // required String geositePath,
     required List<SingboxRule> rules,
     required SingboxMuxOption mux,
     required SingboxTlsTricks tlsTricks,
-    required SingboxWarpOption warp,
-    required SingboxWarpOption warp2,
+    // WireGuard LAN Server
+    @Default(false) bool wgServerEnabled,
+    @Default(51820) int wgServerPort,
+    @Default('10.10.0.0/24') String wgServerSubnet,
+    @Default('') String wgServerPrivateKey,
+    @Default('') String wgServerPublicKey,
+    @Default('') String wgClientPrivateKey,
+    @Default('') String wgClientPublicKey,
   }) = _SingboxConfigOption;
 
   String format() {
@@ -63,28 +75,7 @@ class SingboxConfigOption with _$SingboxConfigOption {
 }
 
 @freezed
-class SingboxWarpOption with _$SingboxWarpOption {
-  @JsonSerializable(fieldRename: FieldRename.kebab)
-  const factory SingboxWarpOption({
-    required bool enable,
-    required WarpDetourMode mode,
-    required String wireguardConfig,
-    required String licenseKey,
-    required String accountId,
-    required String accessToken,
-    required String cleanIp,
-    required int cleanPort,
-    @OptionalRangeJsonConverter() required OptionalRange noise,
-    @OptionalRangeJsonConverter() required OptionalRange noiseSize,
-    @OptionalRangeJsonConverter() required OptionalRange noiseDelay,
-    @OptionalRangeJsonConverter() required String noiseMode,
-  }) = _SingboxWarpOption;
-
-  factory SingboxWarpOption.fromJson(Map<String, dynamic> json) => _$SingboxWarpOptionFromJson(json);
-}
-
-@freezed
-class SingboxMuxOption with _$SingboxMuxOption {
+abstract class SingboxMuxOption with _$SingboxMuxOption {
   @JsonSerializable(fieldRename: FieldRename.kebab)
   const factory SingboxMuxOption({
     required bool enable,
@@ -97,7 +88,7 @@ class SingboxMuxOption with _$SingboxMuxOption {
 }
 
 @freezed
-class SingboxTlsTricks with _$SingboxTlsTricks {
+abstract class SingboxTlsTricks with _$SingboxTlsTricks {
   @JsonSerializable(fieldRename: FieldRename.kebab)
   const factory SingboxTlsTricks({
     required bool enableFragment,

@@ -1,23 +1,17 @@
-import 'dart:io';
-
 import 'package:fpdart/fpdart.dart';
 import 'package:hiddify/core/model/directories.dart';
+import 'package:hiddify/singbox/model/running_process.dart';
 import 'package:hiddify/singbox/model/singbox_config_option.dart';
 import 'package:hiddify/singbox/model/singbox_outbound.dart';
 import 'package:hiddify/singbox/model/singbox_stats.dart';
 import 'package:hiddify/singbox/model/singbox_status.dart';
-import 'package:hiddify/singbox/model/warp_account.dart';
+import 'package:hiddify/singbox/model/wireguard_keys.dart';
 import 'package:hiddify/singbox/service/ffi_singbox_service.dart';
-import 'package:hiddify/singbox/service/platform_singbox_service.dart';
 
 abstract interface class SingboxService {
   factory SingboxService() {
-    if (Platform.isAndroid || Platform.isIOS) {
-      return PlatformSingboxService();
-    } else if (Platform.isLinux || Platform.isWindows || Platform.isMacOS) {
-      return FFISingboxService();
-    }
-    throw Exception("unsupported platform");
+    // Windows only - use FFI service
+    return FFISingboxService();
   }
 
   Future<void> init();
@@ -87,9 +81,109 @@ abstract interface class SingboxService {
 
   TaskEither<String, Unit> clearLogs();
 
-  TaskEither<String, WarpResponse> generateWarpConfig({
-    required String licenseKey,
-    required String previousAccountId,
-    required String previousAccessToken,
-  });
+  TaskEither<String, List<RunningProcess>> listRunningProcesses();
+
+  /// Generate WireGuard key pairs for server and client
+  TaskEither<String, WireGuardKeys> generateWireGuardKeys();
+
+  /// Get local LAN IP address
+  TaskEither<String, LanIPInfo> getLocalLanIP();
+
+  // Xray integration methods
+
+  /// Check if there are xray links stored (xhttp transport)
+  bool hasXrayLinks();
+
+  /// Get list of xray links
+  TaskEither<String, XrayLinksInfo> getXrayLinks();
+
+  /// Start Xray for specific link by index
+  TaskEither<String, XrayStartResult> startXrayForLink(int linkIndex);
+
+  /// Stop Xray service
+  TaskEither<String, Unit> stopXray();
+
+  /// Check if Xray is running
+  bool isXrayRunning();
+
+  /// Get Xray core info
+  TaskEither<String, XrayCoreInfo> getXrayCoreInfo();
+
+  /// Check if outbound tag is an xray proxy
+  bool isXrayOutbound(String tag);
+
+  /// Start Xray for outbound tag (if it's an xray proxy)
+  /// Returns port if started, or indicates if it's not an xray outbound
+  TaskEither<String, XrayByTagResult> startXrayByTag(String tag);
+
+  /// Set Xray config from Hiddify Manager /xray endpoint
+  /// This stores the full Xray JSON config for later use
+  void setXrayConfig(String path, String content);
+
+  /// Get stored Xray config path (if any)
+  String? getXrayConfigPath();
+}
+
+/// Result of starting Xray by tag
+class XrayByTagResult {
+  final int port;
+  final bool isXray;
+  final String? error;
+
+  XrayByTagResult({required this.port, required this.isXray, this.error});
+
+  factory XrayByTagResult.fromJson(Map<String, dynamic> json) {
+    return XrayByTagResult(
+      port: json['port'] as int? ?? 0,
+      isXray: json['is_xray'] as bool? ?? false,
+      error: json['error'] as String?,
+    );
+  }
+}
+
+/// Info about stored xray links
+class XrayLinksInfo {
+  final List<String> links;
+  final int count;
+
+  XrayLinksInfo({required this.links, required this.count});
+
+  factory XrayLinksInfo.fromJson(Map<String, dynamic> json) {
+    return XrayLinksInfo(
+      links: (json['links'] as List?)?.cast<String>() ?? [],
+      count: json['count'] as int? ?? 0,
+    );
+  }
+}
+
+/// Result of starting Xray
+class XrayStartResult {
+  final int port;
+  final String? error;
+
+  XrayStartResult({required this.port, this.error});
+
+  factory XrayStartResult.fromJson(Map<String, dynamic> json) {
+    return XrayStartResult(
+      port: json['port'] as int? ?? 0,
+      error: json['error'] as String?,
+    );
+  }
+}
+
+/// Xray core info
+class XrayCoreInfo {
+  final bool running;
+  final int port;
+  final String type;
+
+  XrayCoreInfo({required this.running, required this.port, required this.type});
+
+  factory XrayCoreInfo.fromJson(Map<String, dynamic> json) {
+    return XrayCoreInfo(
+      running: json['running'] as bool? ?? false,
+      port: json['port'] as int? ?? 0,
+      type: json['type'] as String? ?? 'unknown',
+    );
+  }
 }

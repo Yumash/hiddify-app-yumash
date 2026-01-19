@@ -19,7 +19,7 @@ final disableExperimentalFeatureNoticeProvider =
 class ExperimentalFeatureNoticeDialog extends HookConsumerWidget {
   const ExperimentalFeatureNoticeDialog({super.key});
 
-  Future<bool?> show(BuildContext context) async {
+  Future<bool?> show(BuildContext context) {
     return showDialog<bool>(
       context: context,
       builder: (context) => this,
@@ -46,7 +46,7 @@ class ExperimentalFeatureNoticeDialog extends HookConsumerWidget {
                 value: disableNotice,
                 title: Text(t.connection.disableExperimentalNotice),
                 secondary: const Icon(FluentIcons.eye_off_24_regular),
-                onChanged: (value) async => ref
+                onChanged: (value) => ref
                     .read(disableExperimentalFeatureNoticeProvider.notifier)
                     .update(value ?? false),
                 dense: true,

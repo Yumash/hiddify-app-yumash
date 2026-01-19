@@ -1,12 +1,12 @@
 import 'dart:async';
 
 import 'package:dartx/dartx.dart';
-
-import 'package:hiddify/core/haptic/haptic_service.dart';
 import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/preferences/preferences_provider.dart';
 import 'package:hiddify/core/utils/preferences_utils.dart';
 import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
+import 'package:hiddify/features/profile/data/profile_data_providers.dart';
+import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
 import 'package:hiddify/features/proxy/data/proxy_data_providers.dart';
 import 'package:hiddify/features/proxy/model/proxy_entity.dart';
 import 'package:hiddify/features/proxy/model/proxy_failure.dart';
@@ -57,28 +57,76 @@ class ProxiesOverviewNotifier extends _$ProxiesOverviewNotifier with AppLogger {
   @override
   Stream<List<ProxyGroupEntity>> build() async* {
     ref.disposeDelay(const Duration(seconds: 15));
-    final serviceRunning = await ref.watch(serviceRunningProvider.future);
-    if (!serviceRunning) {
-      throw const ServiceNotRunning();
+
+    // First check if there's an active profile - if not, show empty state immediately
+    final activeProfile = ref.watch(activeProfileProvider);
+    String? profileId;
+    switch (activeProfile) {
+      case AsyncData(value: null):
+        loggy.debug("ProxiesOverviewNotifier: no active profile, throwing ServiceNotRunning");
+        throw const ServiceNotRunning();
+      case AsyncError():
+        loggy.debug("ProxiesOverviewNotifier: active profile error, throwing ServiceNotRunning");
+        throw const ServiceNotRunning();
+      case AsyncLoading():
+        // Profile is still loading - wait for it
+        loggy.debug("ProxiesOverviewNotifier: waiting for active profile to load...");
+        final profile = await ref.watch(activeProfileProvider.future);
+        if (profile == null) {
+          loggy.debug("ProxiesOverviewNotifier: no active profile after loading, throwing ServiceNotRunning");
+          throw const ServiceNotRunning();
+        }
+        profileId = profile.id;
+      case AsyncData(value: final profile):
+        // Profile exists, continue
+        profileId = profile?.id;
+        break;
     }
-    final sortBy = ref.watch(proxiesSortNotifierProvider);
-    yield* ref
-        .watch(proxyRepositoryProvider)
-        .watchProxies()
-        .throttleTime(
-          const Duration(milliseconds: 100),
-          leading: false,
-          trailing: true,
-        )
-        .map(
-          (event) => event.getOrElse(
-            (err) {
-              loggy.warning("error receiving proxies", err);
-              throw err;
-            },
-          ),
-        )
-        .asyncMap((proxies) async => _sortOutbounds(proxies, sortBy));
+
+    loggy.debug("ProxiesOverviewNotifier: checking serviceRunning...");
+    final serviceRunning = await ref.watch(serviceRunningProvider.future);
+    loggy.debug("ProxiesOverviewNotifier: serviceRunning=$serviceRunning");
+    final sortBy = ref.watch(proxiesSortProvider);
+
+    if (serviceRunning) {
+      // VPN is connected - watch live proxies from sing-box
+      loggy.debug("ProxiesOverviewNotifier: service is running, watching proxies...");
+      yield* ref
+          .watch(proxyRepositoryProvider)
+          .watchProxies()
+          .throttleTime(
+            const Duration(milliseconds: 100),
+            leading: false,
+            trailing: true,
+          )
+          .map(
+            (event) => event.getOrElse(
+              (err) {
+                loggy.warning("error receiving proxies", err);
+                throw err;
+              },
+            ),
+          )
+          .asyncMap((proxies) => _sortOutbounds(proxies, sortBy));
+    } else {
+      // VPN is not connected - read proxies from profile config file
+      loggy.debug("ProxiesOverviewNotifier: service not running, reading from file...");
+      if (profileId == null) {
+        throw const ServiceNotRunning();
+      }
+
+      final pathResolver = ref.watch(profilePathResolverProvider);
+      final configPath = pathResolver.file(profileId).path;
+      loggy.debug("ProxiesOverviewNotifier: reading proxies from $configPath");
+
+      final result = await ref.watch(proxyRepositoryProvider).getProxiesFromFile(configPath).run();
+      final proxies = result.getOrElse((err) {
+        loggy.warning("error reading proxies from file", err);
+        throw err;
+      });
+
+      yield await _sortOutbounds(proxies, sortBy);
+    }
   }
 
   Future<List<ProxyGroupEntity>> _sortOutbounds(
@@ -123,29 +171,39 @@ class ProxiesOverviewNotifier extends _$ProxiesOverviewNotifier with AppLogger {
   }
 
   Future<void> changeProxy(String groupTag, String outboundTag) async {
-    loggy.debug(
-      "changing proxy, group: [$groupTag] - outbound: [$outboundTag]",
+    loggy.info(
+      "CHANGING PROXY: group=[$groupTag] outbound=[$outboundTag]",
     );
     if (state case AsyncData(value: final outbounds)) {
-      await ref.read(hapticServiceProvider.notifier).lightImpact();
-      await ref.read(proxyRepositoryProvider).selectProxy(groupTag, outboundTag).getOrElse((err) {
-        loggy.warning("error selecting outbound", err);
-        throw err;
-      }).run();
+      loggy.info("Calling selectProxy...");
+      final result = await ref.read(proxyRepositoryProvider).selectProxy(groupTag, outboundTag).run();
+      result.fold(
+        (err) {
+          loggy.error("ERROR selecting outbound: $err");
+          throw err;
+        },
+        (_) {
+          loggy.info("selectProxy SUCCESS");
+        },
+      );
+
+      // Update local state - sing-box selector handles hot-switching without reconnect
       state = AsyncData(
         [
           ...outbounds.map(
             (e) => e.tag == groupTag ? e.copyWith(selected: outboundTag) : e,
           ),
         ],
-      ).copyWithPrevious(state);
+      );
+      loggy.info("Proxy selection updated in state");
+    } else {
+      loggy.warning("changeProxy called but state is not AsyncData");
     }
   }
 
   Future<void> urlTest(String groupTag) async {
     loggy.debug("testing group: [$groupTag]");
     if (state case AsyncData()) {
-      await ref.read(hapticServiceProvider.notifier).lightImpact();
       await ref.read(proxyRepositoryProvider).urlTest(groupTag).getOrElse((err) {
         loggy.error("error testing group", err);
         throw err;

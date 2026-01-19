@@ -8,7 +8,7 @@ part 'platform_settings_notifier.g.dart';
 @riverpod
 class IgnoreBatteryOptimizations extends _$IgnoreBatteryOptimizations {
   @override
-  Future<bool> build() async {
+  Future<bool> build() {
     return ref
         .watch(settingsRepositoryProvider)
         .isIgnoringBatteryOptimizations()

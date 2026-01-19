@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-// TODO: improve
 class SliverBodyPlaceholder extends HookConsumerWidget {
   const SliverBodyPlaceholder(this.children, {super.key});
 

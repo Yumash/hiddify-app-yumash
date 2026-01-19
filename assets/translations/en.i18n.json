@@ -1,0 +1,477 @@
+{
+  "general": {
+    "appTitle": "Hiddify",
+    "reset": "Reset",
+    "toggle": {
+      "enabled": "Enabled",
+      "disabled": "Disabled"
+    },
+    "state": {
+      "disable": "Disable"
+    },
+    "sort": "Sort",
+    "sortBy": "Sort by",
+    "addToClipboard": "Add To Clipboard",
+    "notSet": "Not Set",
+    "agree": "Agree",
+    "decline": "Decline",
+    "unknown": "Unknown",
+    "hidden": "Hidden",
+    "timeout": "Timeout",
+    "clipboardExportSuccessMsg": "Added To Clipboard",
+    "showMore": "Show More",
+    "showLess": "Show Less",
+    "openAppSettings": "Open App Settings",
+    "grantPermission": "Grant Permission"
+  },
+  "intro": {
+    "termsAndPolicyCaution(rich)": "By Continuing You Agree With ${tap(@:about.termsAndConditions)}",
+    "start": "Start"
+  },
+  "home": {
+    "pageTitle": "Home",
+    "emptyProfilesMsg": "Begin by Adding a Subscription Profile",
+    "noActiveProfileMsg": "Choose a Profile"
+  },
+  "stats": {
+    "traffic": "Traffic",
+    "trafficLive": "Live Traffic",
+    "trafficTotal": "Total Traffic",
+    "uplink": "Uplink",
+    "downlink": "Downlink",
+    "connection": "Connection",
+    "speed": "Speed",
+    "totalTransferred": "Total Transferred"
+  },
+  "profile": {
+    "overviewPageTitle": "Profiles",
+    "detailsPageTitle": "Profile",
+    "activeProfileNameSemanticLabel": "Active Profile Name: \"${name}\".",
+    "activeProfileBtnSemanticLabel": "View All Profiles",
+    "nonActiveProfileBtnSemanticLabel": "Select \"${name}\" as Active Profile",
+    "subscription": {
+      "traffic": "Traffic",
+      "updatedTimeAgo": "Updated ${timeago}",
+      "remainingDuration": "${duration} Days Remaining",
+      "remainingTrafficSemanticLabel": "${consumed} of ${total} Traffic Consumed",
+      "expired": "Expired",
+      "noTraffic": "Out of Quota",
+      "upload": "Upload",
+      "download": "Download",
+      "total": "Total Traffic",
+      "expireDate": "Expire Date",
+      "support": "Support",
+      "webPage": "Web Page"
+    },
+    "sortBy": {
+      "lastUpdate": "Recently Updated",
+      "name": "Alphabetically"
+    },
+    "add": {
+      "buttonText": "New Profile",
+      "shortBtnTxt": "New Profile",
+      "fromClipboard": "Add From Clipboard",
+      "scanQr": "Scan QR Code",
+      "qrScanner": {
+        "permissionDeniedError": "Permission Denied",
+        "unexpectedError": "Something Went Wrong",
+        "torchSemanticLabel": "Flash Light",
+        "facingSemanticLabel": "Camera Facing",
+        "permissionRequest": "Permission to camera to scan QR Code"
+      },
+      "manually": "Manual Entry",
+      "addingProfileMsg": "Adding Profile",
+      "failureMsg": "Failed to Add Profile"
+    },
+    "update": {
+      "buttonTxt": "Update",
+      "tooltip": "Update Profile",
+      "updateSubscriptions": "Update Subscriptions",
+      "failureMsg": "Failed to Update Profile",
+      "successMsg": "Profile Updated Successfully",
+      "namedFailureMsg": "Failed to Update \"${name}\"",
+      "namedSuccessMsg": "\"${name}\" Updated Successfully"
+    },
+    "share": {
+      "buttonText": "Share",
+      "exportToClipboardSuccess": "Exported to Clipboard",
+      "exportSubLinkToClipboard": "Export Subscription Link to Clipboard",
+      "subLinkQrCode": "Subscription Link QR Code",
+      "exportConfigToClipboard": "Export Configuration to Clipboard",
+      "exportConfigToClipboardSuccess": "Configuration Copied to Clipboard"
+    },
+    "edit": {
+      "buttonTxt": "Edit",
+      "selectActiveTxt": "Select Active Profile"
+    },
+    "delete": {
+      "buttonTxt": "Delete",
+      "confirmationMsg": "Delete Profile Permanently?",
+      "successMsg": "Profile Deleted Successfully"
+    },
+    "save": {
+      "buttonText": "Save",
+      "successMsg": "Profile Saved Successfully",
+      "failureMsg": "Failed to Save Profile"
+    },
+    "detailsForm": {
+      "nameLabel": "Name",
+      "nameHint": "Profile Name",
+      "urlLabel": "URL",
+      "urlHint": "Full Config URL",
+      "emptyNameMsg": "Name Is Required",
+      "invalidUrlMsg": "Invalid URL",
+      "lastUpdate": "Last Update",
+      "updateInterval": "Auto Update",
+      "updateIntervalDialogTitle": "Auto Update Interval (in Hours)"
+    }
+  },
+  "proxies": {
+    "pageTitle": "Proxies",
+    "emptyProxiesMsg": "No Proxies Available",
+    "delayTestTooltip": "Test Delay",
+    "sortTooltip": "Sort Proxies",
+    "checkIp": "Check IP",
+    "unknownIp": "Unknown IP",
+    "sortOptions": {
+      "unsorted": "Default",
+      "name": "Alphabetically",
+      "delay": "By Delay"
+    },
+    "activeProxySemanticLabel": "Active Proxy",
+    "delaySemantics": {
+      "result": "Delay: ${delay}ms",
+      "timeout": "Delay Test Timeout",
+      "testing": "Delay: Testing..."
+    },
+    "ipInfoSemantics": {
+      "address": "IP Address",
+      "country": "Country"
+    }
+  },
+  "logs": {
+    "pageTitle": "Logs",
+    "filterHint": "Filter",
+    "allLevelsFilter": "All",
+    "shareCoreLogs": "Share Core Logs",
+    "shareAppLogs": "Share App Logs",
+    "pauseTooltip": "Pause",
+    "resumeTooltip": "Resume",
+    "clearTooltip": "Clear"
+  },
+  "settings": {
+    "pageTitle": "Settings",
+    "requiresRestartMsg": "For this to take effect restart the app",
+    "experimental": "Experimental",
+    "experimentalMsg": "Features with Experimental flag are still in development and might cause issues.",
+    "exportOptions": "Copy Anonymous Options to Clipboard",
+    "exportAllOptions": "Copy All Options to Clipboard",
+    "importOptions": "Import Options From Clipboard",
+    "importOptionsMsg": "This will rewrite all config options with provided values. Are you sure?",
+    "general": {
+      "sectionTitle": "General",
+      "locale": "Language",
+      "region": "Region",
+      "regionMsg": "Helps set default options to bypass domestic addresses",
+      "regions": {
+        "ir": "Iran (ir) 🇮🇷",
+        "cn": "China (cn) 🇨🇳",
+        "ru": "Russia (ru) 🇷🇺",
+        "af": "Afghanistan (af) 🇦🇫",
+        "id": "Indonesia (id) 🇮🇩",
+        "tr": "Türkiye (tr) 🇹🇷",
+        "br": "Brazil (br) 🇧🇷",
+        "other": "Other"
+      },
+      "themeMode": "Theme Mode",
+      "themeModes": {
+        "system": "Follow System Theme",
+        "dark": "Dark Mode",
+        "light": "Light Mode",
+        "black": "Black Mode"
+      },
+      "enableAnalytics": "Enable Analytics",
+      "enableAnalyticsMsg": "Give permission to collect analytics and send crash reports to improve the app",
+      "autoStart": "Start At Login",
+      "silentStart": "Start Minimized",
+      "openWorkingDir": "Open Working Directory",
+      "ignoreBatteryOptimizations": "Disable Battery Optimization",
+      "ignoreBatteryOptimizationsMsg": "Remove Restrictions For Optimal VPN Performance",
+      "dynamicNotification": "Display Speed in Notification",
+      "hapticFeedback": "Haptic Feedback",
+      "autoIpCheck": "Automatically Check Connection IP",
+      "actionAtClosing": "Action at closing",
+      "actionsAtClosing": {
+        "askEachTime": "Ask each time",
+        "hide": "Hide",
+        "exit": "Exit"
+      }
+    },
+    "advanced": {
+      "sectionTitle": "Advanced",
+      "debugMode": "Debug Mode",
+      "debugModeMsg": "Restart the app for applying this change",
+      "memoryLimit": "Memory Limit",
+      "memoryLimitMsg": "Enable if you're experiencing out of memory errors or frequent app crash",
+      "resetTunnel": "Reset VPN Profile"
+    },
+    "network": {
+      "perAppProxyPageTitle": "Per-App Proxy",
+      "perAppProxyModes": {
+        "off": "All",
+        "offMsg": "Proxy All Apps",
+        "include": "Proxy",
+        "includeMsg": "Proxy Only Selected Apps",
+        "exclude": "Bypass",
+        "excludeMsg": "Do Not Proxy Selected Apps"
+      },
+      "showSystemApps": "Show System Apps",
+      "hideSystemApps": "Hide System Apps",
+      "clearSelection": "Clear Selection"
+    }
+  },
+  "about": {
+    "pageTitle": "About",
+    "version": "Version",
+    "sourceCode": "Source Code",
+    "originalProject": "Original Hiddify",
+    "privacyPolicy": "Privacy Policy",
+    "termsAndConditions": "Terms and Conditions",
+    "yumash": {
+      "title": "Yumash Edition — What's changed",
+      "added": "Added",
+      "removed": "Removed",
+      "improved": "Improved",
+      "featureBypassRu": "Bypass Russian domains and IPs (geosite-ru, geoip-ru)",
+      "featureBlockAds": "Block ads with customizable filter URLs",
+      "featureProcessPicker": "Process picker from running list",
+      "featurePortable": "Portable mode (settings next to exe)",
+      "featureTunCgnat": "TUN subnet CGNAT (100.64.0.1/28)",
+      "featureDualCore": "Dual-core: sing-box + Xray-core",
+      "featureHiddifyManager": "Full Hiddify Manager support (xhttp, TLS tricks)",
+      "featureTlsTricks": "TLS Tricks: Mixed SNI Case, fragmentation",
+      "featureRulesetCache": "Rule-set caching with configurable interval",
+      "featureProviderButtons": "Provider support buttons from subscription",
+      "removedPlatforms": "Platforms: iOS, Android, Linux, macOS",
+      "removedIpv6": "IPv6 support",
+      "removedWarp": "Cloudflare WARP",
+      "removedClash": "Clash API",
+      "removedExtensions": "Extension system",
+      "removedAutoupdate": "Auto-update",
+      "removedLocales": "Locales except EN/RU",
+      "improvedSingbox": "sing-box extracted from submodule for customization",
+      "improvedHotSwitch": "Hot proxy switching without reconnect",
+      "improvedFixedWindow": "Fixed window size 900x700",
+      "donate": "Support developer",
+      "donateBtc": "BTC (ByBit)",
+      "donateUsdt": "USDT TRC20",
+      "donateTon": "TON"
+    }
+  },
+  "tray": {
+    "dashboard": "Dashboard",
+    "quit": "Quit",
+    "open": "Open",
+    "status": {
+      "connect": "Connect",
+      "connecting": "Connecting",
+      "disconnect": "Disconnect",
+      "disconnecting": "Disconnecting"
+    }
+  },
+  "failure": {
+    "unexpected": "Unexpected Error",
+    "singbox": {
+      "unexpected": "Unexpected Service Error",
+      "serviceNotRunning": "Service is Not Running",
+      "missingPrivilege": "Missing Privilege",
+      "missingPrivilegeMsg": "VPN Mode Requires Administrator Privileges. Either relaunch the app as administrator or change service mode.",
+      "invalidConfigOptions": "Invalid Configuration Options",
+      "invalidConfig": "Invalid Configuration",
+      "create": "Service Creation Error",
+      "start": "Service Startup Error"
+    },
+    "connectivity": {
+      "unexpected": "Unexpected Failure",
+      "missingVpnPermission": "Missing VPN Permission",
+      "missingNotificationPermission": "Missing Notification Permission",
+      "core": "Core Error"
+    },
+    "profiles": {
+      "unexpected": "Unexpected Error",
+      "notFound": "Profile Not Found",
+      "invalidConfig": "Invalid Configs",
+      "invalidUrl": "Invalid URL"
+    },
+    "connection": {
+      "unexpected": "Unexpected Connection Error",
+      "timeout": "Connection Timeout",
+      "badResponse": "Bad Response",
+      "connectionError": "Connection Error",
+      "badCertificate": "Bad Certificate"
+    }
+  },
+  "connection": {
+    "tapToConnect": "Tap To Connect",
+    "connecting": "Connecting",
+    "disconnecting": "Disconnecting",
+    "connected": "Connected",
+    "reconnect": "Reconnect",
+    "connectAnyWay": "Connect",
+    "experimentalNotice": "Experimental Features In Use",
+    "experimentalNoticeMsg": "You've enabled some experimental features which might affect connection quality and cause unexpected errors. You can always change or reset these options from Config options page.",
+    "disableExperimentalNotice": "Don't Show Again",
+    "reconnectMsg": "Reconnecting for taking into account the changes..."
+  },
+  "config": {
+    "core": "Core",
+    "useXrayCoreWhenPossible": {
+      "Label": "Use Xray-core When Possible",
+      "Description": "Use Xray-core during parsing sub links. You need to reimport the sub link to enable this option."
+    },
+    "resetBtn": "Reset Options",
+    "serviceMode": "Service Mode",
+    "quickSettings": "Quick Settings",
+    "allOptions": "All Config Options",
+    "serviceModes": {
+      "proxy": "Proxy Service Only",
+      "systemProxy": "Set System Proxy",
+      "tun": "VPN",
+      "tunService": "VPN Service"
+    },
+    "shortServiceModes": {
+      "proxy": "Proxy",
+      "systemProxy": "System Proxy",
+      "tun": "VPN",
+      "tunService": "VPN Service"
+    },
+    "section": {
+      "route": "Route Options",
+      "dns": "DNS Options",
+      "dnsExplanation": "Remote DNS is used for sites through VPN (foreign). Direct DNS is for sites without VPN (Russian, from bypass list). This ensures Russian sites get correct IP addresses.",
+      "inbound": "Inbound Options",
+      "mux": "MultiPlexer",
+      "outbound": "Outbound Options",
+      "tlsTricks": "TLS Tricks",
+      "misc": "Misc Options"
+    },
+    "pageTitle": "Config Options",
+    "logLevel": "Log Level",
+    "blockAds": "Block Advertisements",
+    "blockAdsHint": "Blocks ads in apps and browsers",
+    "blockAdsTooltip": "Ad requests are blocked at the network level. Works in all apps, not just browsers. Some sites may break — disable if you have issues.",
+    "resolveDestination": "Resolve Destination",
+    "remoteDnsAddress": "Remote DNS",
+    "remoteDnsDomainStrategy": "Remote DNS Domain Strategy",
+    "directDnsAddress": "Direct DNS",
+    "directDnsDomainStrategy": "Direct DNS Domain Strategy",
+    "mixedPort": "Mixed Port",
+    "mixedPortHint": "Local proxy port for the app to work (HTTP/SOCKS5)",
+    "tproxyPort": "Transparent Proxy Port",
+    "tproxyPortHint": "Used by TUN mode to intercept traffic",
+    "localDnsPort": "Local DNS Port",
+    "localDnsPortHint": "Local DNS server for bypassing blocks",
+    "allowConnectionFromLan": "Share VPN in Local Network",
+    "tunImplementation": "TUN Implementation",
+    "mtu": "Packet Size (MTU)",
+    "connectionTestUrl": "Connection Test URL",
+    "urlTestInterval": "URL Test Interval",
+    "enableTun": "Enable TUN",
+    "setSystemProxy": "Set System Proxy",
+    "enableDnsRouting": "Enable DNS Routing",
+    "enableFakeDns": "Enable Fake DNS",
+    "bypassLan": "Home network direct",
+    "bypassLanHint": "Access router, printer and other devices on home network (192.168.x.x)",
+    "excludedDomains": "Custom sites (manual)",
+    "excludedDomainsHint": "Sites that don't work through VPN (banks, government). Example: *.bank.com, gov.site",
+    "excludedIps": "Custom IP addresses (manual)",
+    "excludedIpsHint": "IP addresses that should work directly. Example: 192.168.1.100, 10.0.0.0/8",
+    "excludedProcesses": "Custom programs (manual)",
+    "excludedProcessesHint": "Games and apps that work poorly through VPN. Example: Steam.exe, Discord.exe",
+    "bypassRussianDomains": "Russian sites direct",
+    "bypassRussianDomainsHint": "Russian sites faster without VPN (.ru, yandex, vk, ok and others)",
+    "bypassRussianIps": "Russian IPs direct",
+    "bypassRussianIpsHint": "All Russian internet direct (even if domain is not .ru)",
+    "russianGeositeUrl": "Russian domains filter URL",
+    "russianGeositeUrlHint": "URL to sing-box binary rule-set (.srs) containing Russian domain list",
+    "russianGeoipUrl": "Russian IPs filter URL",
+    "russianGeoipUrlHint": "URL to sing-box binary rule-set (.srs) containing Russian IP ranges",
+    "blockAdsRuleSetUrls": "Ad blocking filter URLs",
+    "blockAdsRuleSetUrlsHint": "URLs to sing-box binary rule-sets (.srs) for blocking ads/malware. One URL per line",
+    "ruleSetUrlsSection": "Custom filter URLs",
+    "ruleSetUrlsSectionHint": "Override default filter sources with custom URLs (sing-box .srs format)",
+    "ruleSetUpdateInterval": "Rule-set update interval",
+    "ruleSetUpdateIntervalHint": "How often to check for filter list updates (cached locally)",
+    "forceUpdateRuleSets": "Update filters now",
+    "forceUpdateRuleSetsHint": "Force download latest filter lists",
+    "ruleSetUpdated": "Filter lists updated",
+    "ruleSetUpdateFailed": "Failed to update filter lists",
+    "ruleSetUpdating": "Updating filters...",
+    "requiresReconnect": "Requires reconnect",
+    "requiresReconnectTooltip": "Changes will apply after reconnecting",
+    "exclusionListHint": "One item per line",
+    "exclusionItemSingular": "item",
+    "exclusionItemPlural": "items",
+    "ruleSetUrlInvalid": "Invalid URL format",
+    "ruleSetUrlMustEndWithSrs": "URL must end with .srs",
+    "ruleSetUrlLine": "Line",
+    "ruleSetUrlFormat": "URLs must be HTTP(S) and end with .srs",
+    "ruleSetUrlMoreErrors": "${count} more errors",
+    "processPickerTabSelect": "Select from list",
+    "processPickerTabManual": "Enter manually",
+    "processPickerSearch": "Search processes...",
+    "processPickerRefresh": "Refresh list",
+    "processPickerSelected": "Selected",
+    "processPickerError": "Failed to load processes",
+    "processPickerEmpty": "No processes found",
+    "processNotRunning": "not running",
+    "strictRoute": "Strict Route",
+    "strictRouteHint": "Prevents DNS leaks and blocks traffic outside VPN",
+    "strictRouteTooltip": "May cause issues with VirtualBox and similar apps",
+    "lanBypassIps": "LAN Bypass Subnets",
+    "lanBypassIpsHint": "IP ranges that bypass VPN (local network). Example: 192.168.0.0/16, 10.0.0.0/8",
+    "lanBypassIpsDefault": "192.168.0.0/16, 10.0.0.0/8, 172.16.0.0/12",
+    "dayOne": "day",
+    "dayFew": "days",
+    "dayMany": "days",
+    "minuteOne": "minute",
+    "minuteFew": "minutes",
+    "minuteMany": "minutes",
+    "tunAddress": "VPN Subnet",
+    "tunAddressHint": "TUN interface IP address in CIDR format (e.g. 100.64.0.1/28)",
+    "enableTlsFragment": "Enable TLS Fragment",
+    "tlsFragmentSize": "TLS Fragment Size",
+    "tlsFragmentSleep": "TLS Fragment Sleep",
+    "enableTlsMixedSniCase": "Enable TLS Mixed SNI Case",
+    "enableTlsPadding": "Enable TLS Padding",
+    "tlsPaddingSize": "TLS Padding",
+    "enableMux": "Enable Mux",
+    "muxProtocol": "Mux Protocol",
+    "muxMaxStreams": "Max Concurrent Streams",
+    "wgServer": {
+      "title": "Share VPN via WireGuard",
+      "enable": "Enable WireGuard Server",
+      "enableHint": "Allow mobile devices in your LAN to connect via WireGuard",
+      "port": "UDP Port",
+      "subnet": "WireGuard Subnet",
+      "statusEnabled": "Enabled",
+      "statusDisabled": "Disabled",
+      "enableToShowQR": "Enable WireGuard server to show QR code",
+      "scanInstructions": "Scan this QR code with WireGuard app on your phone",
+      "serverAddress": "Server",
+      "copyConfig": "Copy Config",
+      "configError": "Keys not generated yet. Please restart the app.",
+      "securityWarning": "WireGuard server is only accessible from your local network. Do not share the QR code publicly — it contains private keys.",
+      "keysGenerated": "WireGuard keys generated successfully",
+      "noKeys": "WireGuard keys not generated yet",
+      "generateKeys": "Generate Keys",
+      "regenerateKeys": "Regenerate"
+    }
+  },
+  "window": {
+    "hide": "Hide",
+    "close": "Exit",
+    "alertMessage": "Hide or Exit the application?",
+    "remember": "Remember my choice"
+  }
+}

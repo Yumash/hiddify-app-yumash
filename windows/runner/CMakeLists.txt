@@ -13,8 +13,14 @@ add_executable(${BINARY_NAME} WIN32
   "win32_window.cpp"
   "${FLUTTER_MANAGED_DIR}/generated_plugin_registrant.cc"
   "Runner.rc"
-  "runner.exe.manifest"
 )
+
+# Disable automatic manifest generation (manifest is embedded via Runner.rc)
+if(MSVC)
+  set_target_properties(${BINARY_NAME} PROPERTIES
+    LINK_FLAGS "/MANIFEST:NO"
+  )
+endif()
 
 # Apply the standard set of build settings. This can be removed for applications
 # that need different build settings.

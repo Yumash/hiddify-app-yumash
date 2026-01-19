@@ -82,20 +82,7 @@ class ConnectionRepositoryImpl with ExceptionHandler, InfraLogger implements Con
           configOptionRepository.getFullSingboxConfigOption().mapLeft((l) => const InvalidConfigOption()),
         );
 
-        return $(
-          TaskEither(
-            () async {
-              // final geoip = geoAssetPathResolver.resolvePath(options.geoipPath);
-              // final geosite =
-              //     geoAssetPathResolver.resolvePath(options.geositePath);
-              // if (!await File(geoip).exists() ||
-              //     !await File(geosite).exists()) {
-              //   return left(const ConnectionFailure.missingGeoAssets());
-              // }
-              return right(options);
-            },
-          ),
-        );
+        return $(TaskEither.right(options));
       },
     ).handleExceptions(UnexpectedConnectionFailure.new);
   }
@@ -149,7 +136,7 @@ class ConnectionRepositoryImpl with ExceptionHandler, InfraLogger implements Con
   ) {
     return TaskEither<ConnectionFailure, Unit>.Do(
       ($) async {
-        var options = await $(getConfigOption());
+        final options = await $(getConfigOption());
         loggy.info(
           "config options: ${options.format()}\nMemory Limit: ${!disableMemoryLimit}",
         );
@@ -168,7 +155,7 @@ class ConnectionRepositoryImpl with ExceptionHandler, InfraLogger implements Con
         );
         await $(setup());
         await $(applyConfigOption(options, testUrl));
-        return await $(
+        final startResult = await $(
           singbox
               .start(
                 profilePathResolver.file(fileName).path,
@@ -177,8 +164,84 @@ class ConnectionRepositoryImpl with ExceptionHandler, InfraLogger implements Con
               )
               .mapLeft(UnexpectedConnectionFailure.new),
         );
+
+        // After sing-box starts, check if selected proxy needs Xray
+        await _ensureXrayForSelectedProxy();
+
+        return startResult;
       },
     ).handleExceptions(UnexpectedConnectionFailure.new);
+  }
+
+  /// Check selected proxies and start Xray if any of them is an xray outbound
+  Future<void> _ensureXrayForSelectedProxy() async {
+    // Retry with exponential backoff to wait for sing-box to initialize groups
+    const maxAttempts = 5;
+    const baseDelay = Duration(milliseconds: 100);
+
+    for (var attempt = 0; attempt < maxAttempts; attempt++) {
+      try {
+        // Get current groups and check selected proxies
+        final groups = await singbox.watchGroups().first.timeout(
+          const Duration(seconds: 2),
+        );
+
+        if (groups.isEmpty) {
+          if (attempt < maxAttempts - 1) {
+            loggy.debug("No groups yet, retrying... (attempt ${attempt + 1}/$maxAttempts)");
+            await Future.delayed(baseDelay * (attempt + 1));
+            continue;
+          }
+          loggy.warning("No groups found after $maxAttempts attempts");
+          return;
+        }
+
+        for (final group in groups) {
+          if (singbox.isXrayOutbound(group.selected)) {
+            loggy.info("Selected proxy '${group.selected}' is xray, starting Xray...");
+            final result = await singbox.startXrayByTag(group.selected).run();
+            result.fold(
+              (error) {
+                // Enhanced error categorization
+                if (error.toString().contains("DNS") || error.toString().contains("resolve")) {
+                  loggy.error("DNS resolution failed for Xray proxy '${group.selected}' - check hostname validity");
+                } else if (error.toString().contains("TLS") || error.toString().contains("handshake")) {
+                  loggy.error("TLS handshake failed for Xray proxy '${group.selected}' - check SNI and certificate");
+                } else if (error.toString().contains("timeout")) {
+                  loggy.error("Connection timeout for Xray proxy '${group.selected}' - proxy may be offline");
+                } else {
+                  loggy.error("Failed to start Xray for ${group.selected}: $error");
+                }
+              },
+              (xrayResult) {
+                if (xrayResult.error != null) {
+                  if (xrayResult.error!.contains("DNS") || xrayResult.error!.contains("resolve")) {
+                    loggy.error("Xray DNS error: ${xrayResult.error} - check hostname validity");
+                  } else if (xrayResult.error!.contains("TLS") || xrayResult.error!.contains("handshake")) {
+                    loggy.error("Xray TLS error: ${xrayResult.error} - check certificate configuration");
+                  } else {
+                    loggy.error("Xray start error: ${xrayResult.error}");
+                  }
+                } else if (xrayResult.isXray) {
+                  loggy.info("Xray started on port ${xrayResult.port}");
+                }
+              },
+            );
+            // Only need to start Xray once (all xray outbounds share same Xray instance)
+            return;
+          }
+        }
+        // No xray outbound selected, done
+        return;
+      } catch (e) {
+        if (attempt < maxAttempts - 1) {
+          loggy.debug("Error getting groups, retrying... (attempt ${attempt + 1}/$maxAttempts): $e");
+          await Future.delayed(baseDelay * (attempt + 1));
+        } else {
+          loggy.warning("Error checking xray for selected proxy after $maxAttempts attempts: $e");
+        }
+      }
+    }
   }
 
   @override
@@ -199,6 +262,12 @@ class ConnectionRepositoryImpl with ExceptionHandler, InfraLogger implements Con
             return right(unit);
           }),
         );
+        // Stop Xray if running
+        if (singbox.isXrayRunning()) {
+          loggy.info("Stopping Xray on disconnect...");
+          await singbox.stopXray().run();
+        }
+
         return await $(
           singbox.stop().mapLeft(UnexpectedConnectionFailure.new),
         );
@@ -215,13 +284,13 @@ class ConnectionRepositoryImpl with ExceptionHandler, InfraLogger implements Con
   ) {
     return TaskEither<ConnectionFailure, Unit>.Do(
       ($) async {
-        var options = await $(getConfigOption());
+        final options = await $(getConfigOption());
         loggy.info(
           "config options: ${options.format()}\nMemory Limit: ${!disableMemoryLimit}",
         );
 
         await $(applyConfigOption(options, testUrl));
-        return await $(
+        final restartResult = await $(
           singbox
               .restart(
                 profilePathResolver.file(fileName).path,
@@ -230,6 +299,11 @@ class ConnectionRepositoryImpl with ExceptionHandler, InfraLogger implements Con
               )
               .mapLeft(UnexpectedConnectionFailure.new),
         );
+
+        // After sing-box restarts, check if selected proxy needs Xray
+        await _ensureXrayForSelectedProxy();
+
+        return restartResult;
       },
     ).handleExceptions(UnexpectedConnectionFailure.new);
   }

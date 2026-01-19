@@ -9,9 +9,7 @@ import 'package:toastification/toastification.dart';
 part 'in_app_notification_controller.g.dart';
 
 @Riverpod(keepAlive: true)
-InAppNotificationController inAppNotificationController(
-  InAppNotificationControllerRef ref,
-) {
+InAppNotificationController inAppNotificationController(Ref ref) {
   return InAppNotificationController();
 }
 
@@ -39,7 +37,7 @@ class InAppNotificationController with AppLogger {
       showProgressBar: false,
       dragToClose: true,
       closeOnClick: true,
-      closeButtonShowType: CloseButtonShowType.onHover,
+      closeButton: const ToastCloseButton(showType: CloseButtonShowType.onHover),
     );
   }
 

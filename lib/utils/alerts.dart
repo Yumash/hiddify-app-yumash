@@ -21,7 +21,6 @@ class CustomAlertDialog extends StatelessWidget {
   Future<void> show(BuildContext context) async {
     await showDialog(
       context: context,
-      useRootNavigator: true,
       builder: (context) => this,
     );
   }
@@ -127,7 +126,7 @@ class CustomToast extends StatelessWidget {
       showProgressBar: false,
       dragToClose: true,
       closeOnClick: true,
-      closeButtonShowType: CloseButtonShowType.onHover,
+      closeButton: const ToastCloseButton(showType: CloseButtonShowType.onHover),
     );
   }
 }

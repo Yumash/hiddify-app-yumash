@@ -27,9 +27,6 @@ sealed class ConnectionFailure with _$ConnectionFailure, Failure {
   const factory ConnectionFailure.missingPrivilege() = MissingPrivilege;
 
   @With<ExpectedMeasuredFailure>()
-  const factory ConnectionFailure.missingGeoAssets() = MissingGeoAssets;
-
-  @With<ExpectedMeasuredFailure>()
   const factory ConnectionFailure.invalidConfigOption([
     String? message,
   ]) = InvalidConfigOption;
@@ -57,10 +54,6 @@ sealed class ConnectionFailure with _$ConnectionFailure, Failure {
       MissingPrivilege() => (
           type: t.failure.singbox.missingPrivilege,
           message: t.failure.singbox.missingPrivilegeMsg,
-        ),
-      MissingGeoAssets() => (
-          type: t.failure.singbox.missingGeoAssets,
-          message: t.failure.singbox.missingGeoAssetsMsg,
         ),
       InvalidConfigOption(:final message) => (
           type: t.failure.singbox.invalidConfigOptions,

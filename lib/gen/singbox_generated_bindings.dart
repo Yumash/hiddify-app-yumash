@@ -2573,6 +2573,125 @@ class SingboxNativeLibrary {
               ffi.Pointer<ffi.Char>)>>('StartCoreGrpcServer');
   late final _StartCoreGrpcServer = _StartCoreGrpcServerPtr.asFunction<
       ffi.Pointer<ffi.Char> Function(ffi.Pointer<ffi.Char>)>();
+
+  ffi.Pointer<ffi.Char> listRunningProcesses() {
+    return _listRunningProcesses();
+  }
+
+  late final _listRunningProcessesPtr = _lookup<
+      ffi.NativeFunction<ffi.Pointer<ffi.Char> Function()>>('listRunningProcesses');
+  late final _listRunningProcesses = _listRunningProcessesPtr.asFunction<
+      ffi.Pointer<ffi.Char> Function()>();
+
+  ffi.Pointer<ffi.Char> generateWireGuardKeys() {
+    return _generateWireGuardKeys();
+  }
+
+  late final _generateWireGuardKeysPtr = _lookup<
+      ffi.NativeFunction<ffi.Pointer<ffi.Char> Function()>>('generateWireGuardKeys');
+  late final _generateWireGuardKeys = _generateWireGuardKeysPtr.asFunction<
+      ffi.Pointer<ffi.Char> Function()>();
+
+  ffi.Pointer<ffi.Char> getLocalLanIP() {
+    return _getLocalLanIP();
+  }
+
+  late final _getLocalLanIPPtr = _lookup<
+      ffi.NativeFunction<ffi.Pointer<ffi.Char> Function()>>('getLocalLanIP');
+  late final _getLocalLanIP = _getLocalLanIPPtr.asFunction<
+      ffi.Pointer<ffi.Char> Function()>();
+
+  // Xray integration functions
+
+  ffi.Pointer<ffi.Char> getXrayLinks() {
+    return _getXrayLinks();
+  }
+
+  late final _getXrayLinksPtr = _lookup<
+      ffi.NativeFunction<ffi.Pointer<ffi.Char> Function()>>('getXrayLinks');
+  late final _getXrayLinks = _getXrayLinksPtr.asFunction<
+      ffi.Pointer<ffi.Char> Function()>();
+
+  bool hasXrayLinks() {
+    return _hasXrayLinks();
+  }
+
+  late final _hasXrayLinksPtr = _lookup<
+      ffi.NativeFunction<ffi.Bool Function()>>('hasXrayLinks');
+  late final _hasXrayLinks = _hasXrayLinksPtr.asFunction<
+      bool Function()>();
+
+  ffi.Pointer<ffi.Char> startXrayForLink(int linkIndex) {
+    return _startXrayForLink(linkIndex);
+  }
+
+  late final _startXrayForLinkPtr = _lookup<
+      ffi.NativeFunction<ffi.Pointer<ffi.Char> Function(ffi.Int)>>('startXrayForLink');
+  late final _startXrayForLink = _startXrayForLinkPtr.asFunction<
+      ffi.Pointer<ffi.Char> Function(int)>();
+
+  ffi.Pointer<ffi.Char> stopXray() {
+    return _stopXray();
+  }
+
+  late final _stopXrayPtr = _lookup<
+      ffi.NativeFunction<ffi.Pointer<ffi.Char> Function()>>('stopXray');
+  late final _stopXray = _stopXrayPtr.asFunction<
+      ffi.Pointer<ffi.Char> Function()>();
+
+  bool isXrayRunning() {
+    return _isXrayRunning();
+  }
+
+  late final _isXrayRunningPtr = _lookup<
+      ffi.NativeFunction<ffi.Bool Function()>>('isXrayRunning');
+  late final _isXrayRunning = _isXrayRunningPtr.asFunction<
+      bool Function()>();
+
+  ffi.Pointer<ffi.Char> getXrayCoreInfo() {
+    return _getXrayCoreInfo();
+  }
+
+  late final _getXrayCoreInfoPtr = _lookup<
+      ffi.NativeFunction<ffi.Pointer<ffi.Char> Function()>>('getXrayCoreInfo');
+  late final _getXrayCoreInfo = _getXrayCoreInfoPtr.asFunction<
+      ffi.Pointer<ffi.Char> Function()>();
+
+  bool isXrayOutbound(ffi.Pointer<ffi.Char> tag) {
+    return _isXrayOutbound(tag);
+  }
+
+  late final _isXrayOutboundPtr = _lookup<
+      ffi.NativeFunction<ffi.Bool Function(ffi.Pointer<ffi.Char>)>>('isXrayOutbound');
+  late final _isXrayOutbound = _isXrayOutboundPtr.asFunction<
+      bool Function(ffi.Pointer<ffi.Char>)>();
+
+  int getXrayIndexByTag(ffi.Pointer<ffi.Char> tag) {
+    return _getXrayIndexByTag(tag);
+  }
+
+  late final _getXrayIndexByTagPtr = _lookup<
+      ffi.NativeFunction<ffi.Int Function(ffi.Pointer<ffi.Char>)>>('getXrayIndexByTag');
+  late final _getXrayIndexByTag = _getXrayIndexByTagPtr.asFunction<
+      int Function(ffi.Pointer<ffi.Char>)>();
+
+  ffi.Pointer<ffi.Char> startXrayByTag(ffi.Pointer<ffi.Char> tag) {
+    return _startXrayByTag(tag);
+  }
+
+  late final _startXrayByTagPtr = _lookup<
+      ffi.NativeFunction<ffi.Pointer<ffi.Char> Function(ffi.Pointer<ffi.Char>)>>('startXrayByTag');
+  late final _startXrayByTag = _startXrayByTagPtr.asFunction<
+      ffi.Pointer<ffi.Char> Function(ffi.Pointer<ffi.Char>)>();
+
+  ffi.Pointer<ffi.Char> setXrayConfigJson(ffi.Pointer<ffi.Char> configJson) {
+    return _setXrayConfigJson(configJson);
+  }
+
+  late final _setXrayConfigJsonPtr = _lookup<
+      ffi.NativeFunction<ffi.Pointer<ffi.Char> Function(ffi.Pointer<ffi.Char>)>>('setXrayConfigJson');
+  late final _setXrayConfigJson = _setXrayConfigJsonPtr.asFunction<
+      ffi.Pointer<ffi.Char> Function(ffi.Pointer<ffi.Char>)>();
 }
 
 final class __mbstate_t extends ffi.Union {

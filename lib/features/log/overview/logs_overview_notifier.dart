@@ -55,7 +55,14 @@ class LogsOverviewNotifier extends _$LogsOverviewNotifier with AppLogger {
         .requireValue
         .watchLogs()
         .throttle(
-          (_) => Stream.value(_listener?.isPaused ?? false),
+          (event) {
+            // Return stream that emits when throttle window should close
+            // Check if listener is paused to avoid processing during pause
+            if (_listener?.isPaused ?? false) {
+              return const Stream<void>.empty();
+            }
+            return Stream<void>.value(null);
+          },
           leading: false,
           trailing: true,
         )

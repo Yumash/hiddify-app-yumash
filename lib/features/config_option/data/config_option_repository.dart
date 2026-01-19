@@ -2,8 +2,6 @@ import 'package:dartx/dartx.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:hiddify/core/model/optional_range.dart';
 import 'package:hiddify/core/model/region.dart';
-import 'package:hiddify/core/preferences/general_preferences.dart';
-
 import 'package:hiddify/core/utils/exception_handler.dart';
 import 'package:hiddify/core/utils/json_converters.dart';
 import 'package:hiddify/core/utils/preferences_utils.dart';
@@ -51,13 +49,6 @@ abstract class ConfigOptions {
     false,
   );
 
-  static final ipv6Mode = PreferencesNotifier.create<IPv6Mode, String>(
-    "ipv6-mode",
-    IPv6Mode.disable,
-    mapFrom: (value) => IPv6Mode.values.firstWhere((e) => e.key == value),
-    mapTo: (value) => value.key,
-  );
-
   static final remoteDnsAddress = PreferencesNotifier.create<String, String>(
     "remote-dns-address",
     "udp://1.1.1.1",
@@ -96,7 +87,7 @@ abstract class ConfigOptions {
       "4.4.2.2",
       "8.8.8.8",
     ]),
-    defaultValueFunction: (ref) => ref.read(region) == Region.cn ? "223.5.5.5" : "1.1.1.1",
+    defaultValueFunction: (ref) => "1.1.1.1",
     validator: (value) => value.isNotBlank,
   );
 
@@ -107,21 +98,23 @@ abstract class ConfigOptions {
     mapTo: (value) => value.key,
   );
 
+  // Yumash Edition: Using different ports to allow running alongside original Hiddify
+  // Original Hiddify uses: 12334, 12335, 16450
   static final mixedPort = PreferencesNotifier.create<int, int>(
     "mixed-port",
-    12334,
+    22334,
     validator: (value) => isPort(value.toString()),
   );
 
   static final tproxyPort = PreferencesNotifier.create<int, int>(
     "tproxy-port",
-    12335,
+    22335,
     validator: (value) => isPort(value.toString()),
   );
 
   static final localDnsPort = PreferencesNotifier.create<int, int>(
     "local-dns-port",
-    16450,
+    26450,
     validator: (value) => isPort(value.toString()),
   );
 
@@ -132,9 +125,17 @@ abstract class ConfigOptions {
     mapTo: (value) => value.name,
   );
 
-  static final mtu = PreferencesNotifier.create<int, int>("mtu", 9000);
+  static final mtu = PreferencesNotifier.create<int, int>("mtu", 1400);
 
   static final strictRoute = PreferencesNotifier.create<bool, bool>("strict-route", true);
+
+  // TUN/VPN subnet address (CIDR format)
+  // Yumash Edition: Using 100.64.1.x to allow running alongside original Hiddify (100.64.0.x)
+  static final tunAddress = PreferencesNotifier.create<String, String>(
+    "tun-address",
+    "100.64.1.1/28", // CGNAT range, different from original Hiddify
+    validator: (value) => RegExp(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/\d{1,2}$').hasMatch(value),
+  );
 
   static final connectionTestUrl = PreferencesNotifier.create<String, String>(
     "connection-test-url",
@@ -160,22 +161,76 @@ abstract class ConfigOptions {
     mapTo: const IntervalInSecondsConverter().toJson,
   );
 
-  static final enableClashApi = PreferencesNotifier.create<bool, bool>(
-    "enable-clash-api",
-    true,
-  );
+  static final bypassLan = PreferencesNotifier.create<bool, bool>("bypass-lan", true);
 
-  static final clashApiPort = PreferencesNotifier.create<int, int>(
-    "clash-api-port",
-    16756,
-    validator: (value) => isPort(value.toString()),
+  // LAN bypass IP ranges (CIDR notation, comma-separated)
+  static final lanBypassIps = PreferencesNotifier.create<String, String>(
+    "lan-bypass-ips",
+    "192.168.0.0/16,10.0.0.0/8,172.16.0.0/12", // Default private ranges
   );
-
-  static final bypassLan = PreferencesNotifier.create<bool, bool>("bypass-lan", false);
 
   static final allowConnectionFromLan = PreferencesNotifier.create<bool, bool>(
     "allow-connection-from-lan",
     false,
+  );
+
+  static final excludedDomains = PreferencesNotifier.create<String, String>(
+    "excluded-domains",
+    "",
+  );
+
+  static final excludedIps = PreferencesNotifier.create<String, String>(
+    "excluded-ips",
+    "",
+  );
+
+  static final excludedProcesses = PreferencesNotifier.create<String, String>(
+    "excluded-processes",
+    "",
+  );
+
+  // Russian bypass options - direct traffic for Russia
+  static final bypassRussianDomains = PreferencesNotifier.create<bool, bool>(
+    "bypass-russian-domains",
+    false,
+  );
+
+  static final bypassRussianIps = PreferencesNotifier.create<bool, bool>(
+    "bypass-russian-ips",
+    false,
+  );
+
+  // Custom URLs for rule-sets
+  // Block Ads rule-set URLs (comma-separated)
+  static final blockAdsRuleSetUrls = PreferencesNotifier.create<String, String>(
+    "block-ads-ruleset-urls",
+    // Default URLs from hiddify-geo
+    "https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block/geosite-category-ads-all.srs,"
+    "https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block/geosite-malware.srs,"
+    "https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block/geosite-phishing.srs,"
+    "https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block/geosite-cryptominers.srs,"
+    "https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block/geoip-malware.srs,"
+    "https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/block/geoip-phishing.srs",
+  );
+
+  // Russian bypass geosite URL
+  static final russianGeositeUrl = PreferencesNotifier.create<String, String>(
+    "russian-geosite-url",
+    "https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/country/geosite-ru.srs",
+  );
+
+  // Russian bypass geoip URL
+  static final russianGeoipUrl = PreferencesNotifier.create<String, String>(
+    "russian-geoip-url",
+    "https://raw.githubusercontent.com/hiddify/hiddify-geo/rule-set/country/geoip-ru.srs",
+  );
+
+  // Rule-set update interval (cached locally, default 7 days)
+  static final ruleSetUpdateInterval = PreferencesNotifier.create<Duration, int>(
+    "rule-set-update-interval",
+    const Duration(days: 7),
+    mapFrom: const IntervalInSecondsConverter().fromJson,
+    mapTo: const IntervalInSecondsConverter().toJson,
   );
 
   static final enableFakeDns = PreferencesNotifier.create<bool, bool>(
@@ -252,86 +307,41 @@ abstract class ConfigOptions {
     mapTo: (value) => value.name,
   );
 
-  static final enableWarp = PreferencesNotifier.create<bool, bool>(
-    "enable-warp",
+  // WireGuard LAN Server settings
+  static final wgServerEnabled = PreferencesNotifier.create<bool, bool>(
+    "wg-server-enabled",
     false,
   );
 
-  static final warpDetourMode = PreferencesNotifier.create<WarpDetourMode, String>(
-    "warp-detour-mode",
-    WarpDetourMode.proxyOverWarp,
-    mapFrom: WarpDetourMode.values.byName,
-    mapTo: (value) => value.name,
-  );
-
-  static final warpLicenseKey = PreferencesNotifier.create<String, String>(
-    "warp-license-key",
-    "",
-  );
-  static final warp2LicenseKey = PreferencesNotifier.create<String, String>(
-    "warp2s-license-key",
-    "",
-  );
-
-  static final warpAccountId = PreferencesNotifier.create<String, String>(
-    "warp-account-id",
-    "",
-  );
-  static final warp2AccountId = PreferencesNotifier.create<String, String>(
-    "warp2-account-id",
-    "",
-  );
-
-  static final warpAccessToken = PreferencesNotifier.create<String, String>(
-    "warp-access-token",
-    "",
-  );
-  static final warp2AccessToken = PreferencesNotifier.create<String, String>(
-    "warp2-access-token",
-    "",
-  );
-
-  static final warpCleanIp = PreferencesNotifier.create<String, String>(
-    "warp-clean-ip",
-    "auto",
-  );
-
-  static final warpPort = PreferencesNotifier.create<int, int>(
-    "warp-port",
-    0,
+  static final wgServerPort = PreferencesNotifier.create<int, int>(
+    "wg-server-port",
+    51820,
     validator: (value) => isPort(value.toString()),
   );
 
-  static final warpNoise = PreferencesNotifier.create<OptionalRange, String>(
-    "warp-noise",
-    const OptionalRange(min: 1, max: 3),
-    mapFrom: (value) => OptionalRange.parse(value, allowEmpty: true),
-    mapTo: const OptionalRangeJsonConverter().toJson,
-  );
-  static final warpNoiseMode = PreferencesNotifier.create<String, String>(
-    "warp-noise-mode",
-    "m4",
+  static final wgServerSubnet = PreferencesNotifier.create<String, String>(
+    "wg-server-subnet",
+    "10.10.0.0/24",
+    validator: (value) => RegExp(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/\d{1,2}$').hasMatch(value),
   );
 
-  static final warpNoiseDelay = PreferencesNotifier.create<OptionalRange, String>(
-    "warp-noise-delay",
-    const OptionalRange(min: 10, max: 30),
-    mapFrom: (value) => OptionalRange.parse(value, allowEmpty: true),
-    mapTo: const OptionalRangeJsonConverter().toJson,
-  );
-  static final warpNoiseSize = PreferencesNotifier.create<OptionalRange, String>(
-    "warp-noise-size",
-    const OptionalRange(min: 10, max: 30),
-    mapFrom: (value) => OptionalRange.parse(value, allowEmpty: true),
-    mapTo: const OptionalRangeJsonConverter().toJson,
-  );
-
-  static final warpWireguardConfig = PreferencesNotifier.create<String, String>(
-    "warp-wireguard-config",
+  static final wgServerPrivateKey = PreferencesNotifier.create<String, String>(
+    "wg-server-private-key",
     "",
   );
-  static final warp2WireguardConfig = PreferencesNotifier.create<String, String>(
-    "warp2-wireguard-config",
+
+  static final wgServerPublicKey = PreferencesNotifier.create<String, String>(
+    "wg-server-public-key",
+    "",
+  );
+
+  static final wgClientPrivateKey = PreferencesNotifier.create<String, String>(
+    "wg-client-private-key",
+    "",
+  );
+
+  static final wgClientPublicKey = PreferencesNotifier.create<String, String>(
+    "wg-client-public-key",
     "",
   );
 
@@ -341,7 +351,7 @@ abstract class ConfigOptions {
       if (PlatformUtils.isDesktop && mode == ServiceMode.tun) {
         return true;
       }
-      if (ref.watch(enableTlsFragment) || ref.watch(enableTlsMixedSniCase) || ref.watch(enableTlsPadding) || ref.watch(enableMux) || ref.watch(enableWarp) || ref.watch(bypassLan) || ref.watch(allowConnectionFromLan)) {
+      if (ref.watch(enableTlsFragment) || ref.watch(enableTlsMixedSniCase) || ref.watch(enableTlsPadding) || ref.watch(enableMux) || ref.watch(bypassLan) || ref.watch(allowConnectionFromLan)) {
         return true;
       }
 
@@ -349,26 +359,13 @@ abstract class ConfigOptions {
     },
   );
 
-  /// preferences to exclude from share and export
-  static final privatePreferencesKeys = {
-    "warp.license-key",
-    "warp.access-token",
-    "warp.account-id",
-    "warp.wireguard-config",
-    "warp2.license-key",
-    "warp2.access-token",
-    "warp2.account-id",
-    "warp2.wireguard-config",
-  };
-
-  static final Map<String, StateNotifierProvider<PreferencesNotifier, dynamic>> preferences = {
+  static final Map<String, NotifierProvider<PreferencesNotifier, dynamic>> preferences = {
     "region": region,
     "block-ads": blockAds,
     "use-xray-core-when-possible": useXrayCoreWhenPossible,
     "service-mode": serviceMode,
     "log-level": logLevel,
     "resolve-destination": resolveDestination,
-    "ipv6-mode": ipv6Mode,
     "remote-dns-address": remoteDnsAddress,
     "remote-dns-domain-strategy": remoteDnsDomainStrategy,
     "direct-dns-address": directDnsAddress,
@@ -379,12 +376,22 @@ abstract class ConfigOptions {
     "tun-implementation": tunImplementation,
     "mtu": mtu,
     "strict-route": strictRoute,
+    "tun-address": tunAddress,
     "connection-test-url": connectionTestUrl,
     "url-test-interval": urlTestInterval,
-    "clash-api-port": clashApiPort,
     "bypass-lan": bypassLan,
+    "lan-bypass-ips": lanBypassIps,
     "allow-connection-from-lan": allowConnectionFromLan,
+    "excluded-domains": excludedDomains,
+    "excluded-ips": excludedIps,
+    "excluded-processes": excludedProcesses,
     "enable-dns-routing": enableDnsRouting,
+    "bypass-russian-domains": bypassRussianDomains,
+    "bypass-russian-ips": bypassRussianIps,
+    "block-ads-ruleset-urls": blockAdsRuleSetUrls,
+    "russian-geosite-url": russianGeositeUrl,
+    "russian-geoip-url": russianGeoipUrl,
+    "rule-set-update-interval": ruleSetUpdateInterval,
 
     // mux
     "mux.enable": enableMux,
@@ -400,70 +407,19 @@ abstract class ConfigOptions {
     "tls-tricks.enable-padding": enableTlsPadding,
     "tls-tricks.padding-size": tlsPaddingSize,
 
-    // warp
-    "warp.enable": enableWarp,
-    "warp.mode": warpDetourMode,
-    "warp.license-key": warpLicenseKey,
-    "warp.account-id": warpAccountId,
-    "warp.access-token": warpAccessToken,
-    "warp.clean-ip": warpCleanIp,
-    "warp.clean-port": warpPort,
-    "warp.noise": warpNoise,
-    "warp.noise-size": warpNoiseSize,
-    "warp.noise-mode": warpNoiseMode,
-    "warp.noise-delay": warpNoiseDelay,
-    "warp.wireguard-config": warpWireguardConfig,
-    "warp2.license-key": warp2LicenseKey,
-    "warp2.account-id": warp2AccountId,
-    "warp2.access-token": warp2AccessToken,
-    "warp2.wireguard-config": warp2WireguardConfig,
+    // wireguard-server
+    "wg-server-enabled": wgServerEnabled,
+    "wg-server-port": wgServerPort,
+    "wg-server-subnet": wgServerSubnet,
+    "wg-server-private-key": wgServerPrivateKey,
+    "wg-server-public-key": wgServerPublicKey,
+    "wg-client-private-key": wgClientPrivateKey,
+    "wg-client-public-key": wgClientPublicKey,
   };
 
   static final singboxConfigOptions = FutureProvider<SingboxConfigOption>(
-    (ref) async {
-      // final region = ref.watch(Preferences.region);
+    (ref) {
       final rules = <SingboxRule>[];
-      // final rules = switch (region) {
-      //   Region.ir => [
-      //       const SingboxRule(
-      //         domains: "domain:.ir,geosite:ir",
-      //         ip: "geoip:ir",
-      //         outbound: RuleOutbound.bypass,
-      //       ),
-      //     ],
-      //   Region.cn => [
-      //       const SingboxRule(
-      //         domains: "domain:.cn,geosite:cn",
-      //         ip: "geoip:cn",
-      //         outbound: RuleOutbound.bypass,
-      //       ),
-      //     ],
-      //   Region.ru => [
-      //       const SingboxRule(
-      //         domains: "domain:.ru",
-      //         ip: "geoip:ru",
-      //         outbound: RuleOutbound.bypass,
-      //       ),
-      //     ],
-      //   Region.af => [
-      //       const SingboxRule(
-      //         domains: "domain:.af,geosite:af",
-      //         ip: "geoip:af",
-      //         outbound: RuleOutbound.bypass,
-      //       ),
-      //     ],
-      //   Region.id => [
-      //       const SingboxRule(
-      //         domains: "domain:.id,geosite:id",
-      //         ip: "geoip:id",
-      //         outbound: RuleOutbound.bypass,
-      //       ),
-      //     ],
-      //   _ => <SingboxRule>[],
-      // };
-
-      final mode = ref.watch(serviceMode);
-      // final reg = ref.watch(Preferences.region.notifier).raw();
 
       return SingboxConfigOption(
         region: ref.watch(region).name,
@@ -472,7 +428,6 @@ abstract class ConfigOptions {
         executeConfigAsIs: false,
         logLevel: ref.watch(logLevel),
         resolveDestination: ref.watch(resolveDestination),
-        ipv6Mode: ref.watch(ipv6Mode),
         remoteDnsAddress: ref.watch(remoteDnsAddress),
         remoteDnsDomainStrategy: ref.watch(remoteDnsDomainStrategy),
         directDnsAddress: ref.watch(directDnsAddress),
@@ -483,15 +438,24 @@ abstract class ConfigOptions {
         tunImplementation: ref.watch(tunImplementation),
         mtu: ref.watch(mtu),
         strictRoute: ref.watch(strictRoute),
+        tunAddress: ref.watch(tunAddress),
         connectionTestUrl: ref.watch(connectionTestUrl),
         urlTestInterval: ref.watch(urlTestInterval),
-        enableClashApi: ref.watch(enableClashApi),
-        clashApiPort: ref.watch(clashApiPort),
-        enableTun: mode == ServiceMode.tun,
-        enableTunService: mode == ServiceMode.tunService,
-        setSystemProxy: mode == ServiceMode.systemProxy,
+        enableTun: true, // Yumash Edition: VPN mode always enabled
+        enableTunService: false, // Not used in Yumash Edition
+        setSystemProxy: false, // Not used in Yumash Edition
         bypassLan: ref.watch(bypassLan),
+        lanBypassIps: ref.watch(lanBypassIps),
         allowConnectionFromLan: ref.watch(allowConnectionFromLan),
+        excludedDomains: ref.watch(excludedDomains),
+        excludedIps: ref.watch(excludedIps),
+        excludedProcesses: ref.watch(excludedProcesses),
+        bypassRussianDomains: ref.watch(bypassRussianDomains),
+        bypassRussianIps: ref.watch(bypassRussianIps),
+        blockAdsRuleSetUrls: ref.watch(blockAdsRuleSetUrls),
+        russianGeositeUrl: ref.watch(russianGeositeUrl),
+        russianGeoipUrl: ref.watch(russianGeoipUrl),
+        ruleSetUpdateInterval: ref.watch(ruleSetUpdateInterval),
         enableFakeDns: ref.watch(enableFakeDns),
         enableDnsRouting: ref.watch(enableDnsRouting),
         independentDnsCache: ref.watch(independentDnsCache),
@@ -509,43 +473,15 @@ abstract class ConfigOptions {
           enablePadding: ref.watch(enableTlsPadding),
           paddingSize: ref.watch(tlsPaddingSize),
         ),
-        warp: SingboxWarpOption(
-          enable: ref.watch(enableWarp),
-          mode: ref.watch(warpDetourMode),
-          wireguardConfig: ref.watch(warpWireguardConfig),
-          licenseKey: ref.watch(warpLicenseKey),
-          accountId: ref.watch(warpAccountId),
-          accessToken: ref.watch(warpAccessToken),
-          cleanIp: ref.watch(warpCleanIp),
-          cleanPort: ref.watch(warpPort),
-          noise: ref.watch(warpNoise),
-          noiseMode: ref.watch(warpNoiseMode),
-          noiseSize: ref.watch(warpNoiseSize),
-          noiseDelay: ref.watch(warpNoiseDelay),
-        ),
-        warp2: SingboxWarpOption(
-          enable: ref.watch(enableWarp),
-          mode: ref.watch(warpDetourMode),
-          wireguardConfig: ref.watch(warp2WireguardConfig),
-          licenseKey: ref.watch(warp2LicenseKey),
-          accountId: ref.watch(warp2AccountId),
-          accessToken: ref.watch(warp2AccessToken),
-          cleanIp: ref.watch(warpCleanIp),
-          cleanPort: ref.watch(warpPort),
-          noise: ref.watch(warpNoise),
-          noiseMode: ref.watch(warpNoiseMode),
-          noiseSize: ref.watch(warpNoiseSize),
-          noiseDelay: ref.watch(warpNoiseDelay),
-        ),
-        // geoipPath: ref.watch(geoAssetPathResolverProvider).relativePath(
-        //       geoAssets.geoip.providerName,
-        //       geoAssets.geoip.fileName,
-        //     ),
-        // geositePath: ref.watch(geoAssetPathResolverProvider).relativePath(
-        //       geoAssets.geosite.providerName,
-        //       geoAssets.geosite.fileName,
-        //     ),
         rules: rules,
+        // WireGuard LAN Server
+        wgServerEnabled: ref.watch(wgServerEnabled),
+        wgServerPort: ref.watch(wgServerPort),
+        wgServerSubnet: ref.watch(wgServerSubnet),
+        wgServerPrivateKey: ref.watch(wgServerPrivateKey),
+        wgServerPublicKey: ref.watch(wgServerPublicKey),
+        wgClientPrivateKey: ref.watch(wgClientPrivateKey),
+        wgClientPublicKey: ref.watch(wgClientPublicKey),
       );
     },
   );

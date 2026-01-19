@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:hiddify/core/logger/custom_logger.dart';
 import 'package:hiddify/utils/custom_loggers.dart';
 import 'package:loggy/loggy.dart';
@@ -31,10 +29,7 @@ class LoggerController extends LoggyPrinter with InfraLogger {
 
   static Future<void> postInit(bool debugMode) async {
     final logLevel = debugMode ? LogLevel.all : LogLevel.info;
-    final logToFile = debugMode || (!Platform.isAndroid && !Platform.isIOS);
-
-    if (!logToFile) _instance.removePrinter("app");
-
+    // Windows: always log to file
     Loggy.initLoggy(
       logPrinter: _instance,
       logOptions: LogOptions(logLevel),

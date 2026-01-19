@@ -20,10 +20,9 @@ class SettingsInputDialog<T> extends HookConsumerWidget with PresLogger {
   final IconData? icon;
   final bool digitsOnly;
 
-  Future<T?> show(BuildContext context) async {
+  Future<T?> show(BuildContext context) {
     return showDialog(
       context: context,
-      useRootNavigator: true,
       builder: (context) => this,
     );
   }
@@ -64,7 +63,7 @@ class SettingsInputDialog<T> extends HookConsumerWidget with PresLogger {
                     );
                   },
                   // Callback to fetch suggestions based on user input
-                  suggestionsCallback: (pattern) async {
+                  suggestionsCallback: (pattern) {
                     final items = possibleValues!.map((p) => p.toString());
                     var res = items.where((suggestion) => suggestion.toLowerCase().contains(pattern.toLowerCase())).toList();
                     if (res.length <= 1) res = [pattern, ...items.where((s) => s != pattern)];
@@ -84,9 +83,7 @@ class SettingsInputDialog<T> extends HookConsumerWidget with PresLogger {
                   },
                   // Callback when a suggestion is selected
                   onSelected: (suggestion) {
-                    // Handle the selected suggestion
-                    print('Selected: $suggestion');
-                    textController.text = suggestion.toString();
+                    textController.text = suggestion;
                   },
                 )
               else
@@ -120,7 +117,7 @@ class SettingsInputDialog<T> extends HookConsumerWidget with PresLogger {
               child: TextButton(
                 onPressed: () async {
                   onReset!();
-                  await Navigator.of(context).maybePop(null);
+                  await Navigator.of(context).maybePop();
                 },
                 child: Text(t.general.reset.toUpperCase()),
               ),
@@ -139,7 +136,7 @@ class SettingsInputDialog<T> extends HookConsumerWidget with PresLogger {
             child: TextButton(
               onPressed: () async {
                 if (validator?.call(textController.value.text) == false) {
-                  await Navigator.of(context).maybePop(null);
+                  await Navigator.of(context).maybePop();
                 } else if (mapTo != null) {
                   await Navigator.of(context).maybePop(mapTo!.call(textController.value.text));
                 } else {
@@ -164,7 +161,7 @@ class AutocompleteField extends StatelessWidget {
   Widget build(BuildContext context) {
     return Autocomplete<String>(
       initialValue: TextEditingValue(
-        text: this.initialValue, selection: TextSelection(baseOffset: 0, extentOffset: this.initialValue.length), // Selects the entire text
+        text: initialValue, selection: TextSelection(baseOffset: 0, extentOffset: initialValue.length), // Selects the entire text
       ),
       optionsBuilder: (TextEditingValue textEditingValue) {
         // if (textEditingValue.text == '') {
@@ -174,9 +171,7 @@ class AutocompleteField extends StatelessWidget {
           return option.contains(textEditingValue.text.toLowerCase());
         });
       },
-      onSelected: (String selection) {
-        //debugPrint('You just selected $selection');
-      },
+      onSelected: (String selection) {},
     );
   }
 }
@@ -197,10 +192,9 @@ class SettingsPickerDialog<T> extends HookConsumerWidget with PresLogger {
   final String Function(T e) getTitle;
   final VoidCallback? onReset;
 
-  Future<T?> show(BuildContext context) async {
+  Future<T?> show(BuildContext context) {
     return showDialog(
       context: context,
-      useRootNavigator: true,
       builder: (context) => this,
     );
   }
@@ -212,26 +206,31 @@ class SettingsPickerDialog<T> extends HookConsumerWidget with PresLogger {
 
     return AlertDialog(
       title: Text(title),
-      content: Column(
-        children: options
-            .map(
-              (e) => RadioListTile(
-                title: Text(getTitle(e)),
-                value: e,
-                groupValue: selected,
-                onChanged: (value) async {
-                  await Navigator.of(context).maybePop(e);
-                },
-              ),
-            )
-            .toList(),
+      content: RadioGroup<T>(
+        groupValue: selected,
+        onChanged: (value) async {
+          if (value != null) {
+            await Navigator.of(context).maybePop(value);
+          }
+        },
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: options
+              .map(
+                (e) => RadioListTile<T>(
+                  title: Text(getTitle(e)),
+                  value: e,
+                ),
+              )
+              .toList(),
+        ),
       ),
       actions: [
         if (onReset != null)
           TextButton(
             onPressed: () async {
               onReset!();
-              await Navigator.of(context).maybePop(null);
+              await Navigator.of(context).maybePop();
             },
             child: Text(t.general.reset.toUpperCase()),
           ),
@@ -267,10 +266,9 @@ class SettingsSliderDialog extends HookConsumerWidget with PresLogger {
   final int? divisions;
   final String Function(double value)? labelGen;
 
-  Future<double?> show(BuildContext context) async {
+  Future<double?> show(BuildContext context) {
     return showDialog(
       context: context,
-      useRootNavigator: true,
       builder: (context) => this,
     );
   }
@@ -299,7 +297,7 @@ class SettingsSliderDialog extends HookConsumerWidget with PresLogger {
           TextButton(
             onPressed: () async {
               onReset!();
-              await Navigator.of(context).maybePop(null);
+              await Navigator.of(context).maybePop();
             },
             child: Text(t.general.reset.toUpperCase()),
           ),

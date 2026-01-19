@@ -1,8 +1,6 @@
 import 'dart:async';
 
 import 'package:dio/dio.dart';
-import 'package:hiddify/core/haptic/haptic_service.dart';
-import 'package:hiddify/core/preferences/general_preferences.dart';
 import 'package:hiddify/core/utils/throttler.dart';
 import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
 import 'package:hiddify/features/proxy/data/proxy_data_providers.dart';
@@ -19,45 +17,32 @@ part 'active_proxy_notifier.g.dart';
 class IpInfoNotifier extends _$IpInfoNotifier with AppLogger {
   @override
   Future<IpInfo> build() async {
-    ref.disposeDelay(const Duration(seconds: 20));
+    ref.disposeDelay(const Duration(minutes: 5));
     final cancelToken = CancelToken();
-    Timer? timer;
+    Timer? refreshTimer;
     ref.onDispose(() {
       loggy.debug("disposing");
       cancelToken.cancel();
-      timer?.cancel();
+      refreshTimer?.cancel();
     });
 
-    ref.listen(
-      serviceRunningProvider,
-      (_, next) => _idle = false,
-    );
-
-    final autoCheck = ref.watch(Preferences.autoCheckIp);
     final serviceRunning = await ref.watch(serviceRunningProvider.future);
-    // loggy.debug(
-    //   "idle? [$_idle], forced? [$_forceCheck], connected? [$serviceRunning]",
-    // );
-    if (!_forceCheck && !serviceRunning) {
+    if (!serviceRunning) {
       throw const ServiceNotRunning();
-    } else if ((_idle && !_forceCheck) || (!_forceCheck && serviceRunning && !autoCheck)) {
-      throw const UnknownIp();
     }
 
-    _forceCheck = false;
     final info = await ref.watch(proxyRepositoryProvider).getCurrentIpInfo(cancelToken).getOrElse(
       (err) {
         loggy.warning("error getting proxy ip info", err, StackTrace.current);
-        // throw err; //hiddify: remove exception to be logged
         throw const UnknownIp();
       },
     ).run();
 
-    timer = Timer(
-      const Duration(seconds: 10),
+    // Auto-refresh IP every 30 seconds while connected
+    refreshTimer = Timer(
+      const Duration(seconds: 30),
       () {
-        loggy.debug("entering idle mode");
-        _idle = true;
+        loggy.debug("auto-refreshing IP info");
         ref.invalidateSelf();
       },
     );
@@ -65,15 +50,10 @@ class IpInfoNotifier extends _$IpInfoNotifier with AppLogger {
     return info;
   }
 
-  bool _idle = false;
-  bool _forceCheck = false;
-
   Future<void> refresh() async {
     if (state.isLoading) return;
-    loggy.debug("refreshing");
+    loggy.debug("manual refresh");
     state = const AsyncLoading();
-    await ref.read(hapticServiceProvider.notifier).lightImpact();
-    _forceCheck = true;
     ref.invalidateSelf();
   }
 }
@@ -89,17 +69,38 @@ class ActiveProxyNotifier extends _$ActiveProxyNotifier with AppLogger {
       throw const ServiceNotRunning();
     }
 
-    yield* ref.watch(proxyRepositoryProvider).watchActiveProxies().map((event) => event.getOrElse((l) => throw l)).map((event) => event.firstOrNull!.items.first);
+    yield* ref
+        .watch(proxyRepositoryProvider)
+        .watchActiveProxies()
+        .map((event) => event.getOrElse((l) => throw l))
+        .where((groups) => groups.isNotEmpty)
+        .map((groups) {
+      loggy.debug("watchActiveProxies groups: ${groups.length}");
+      // Find primary group (Select or first)
+      final group = groups.firstWhere(
+        (g) => g.tag == 'Select' || g.tag == 'select',
+        orElse: () => groups.first,
+      );
+      loggy.debug("Found group: ${group.tag}, selected: ${group.selected}, items: ${group.items.length}");
+      // Find selected proxy in the group by group.selected
+      final selectedProxyTag = group.selected;
+      final selectedProxy = group.items.firstWhere(
+        (item) => item.tag == selectedProxyTag,
+        orElse: () => group.items.first,
+      );
+      loggy.debug("Selected proxy: tag=${selectedProxy.tag}, name=${selectedProxy.name}, selectedName=${selectedProxy.selectedName}");
+      // Return the selected proxy - use selectedName if available (for selector groups)
+      return selectedProxy;
+    });
   }
 
   final _urlTestThrottler = Throttler(const Duration(seconds: 2));
 
   Future<void> urlTest(String groupTag_) async {
-    var groupTag = groupTag_;
+    final groupTag = groupTag_;
     _urlTestThrottler(
       () async {
         if (state case AsyncData()) {
-          await ref.read(hapticServiceProvider.notifier).lightImpact();
           await ref.read(proxyRepositoryProvider).urlTest(groupTag).getOrElse((err) {
             loggy.warning("error testing group", err);
             throw err;

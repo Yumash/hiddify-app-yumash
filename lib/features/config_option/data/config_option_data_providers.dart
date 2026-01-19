@@ -6,9 +6,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 part 'config_option_data_providers.g.dart';
 
 @Riverpod(keepAlive: true)
-ConfigOptionRepository configOptionRepository(
-  ConfigOptionRepositoryRef ref,
-) {
+ConfigOptionRepository configOptionRepository(Ref ref) {
   return ConfigOptionRepository(
     preferences: ref.watch(sharedPreferencesProvider).requireValue,
     getConfigOptions: () => ref.read(ConfigOptions.singboxConfigOptions.future),

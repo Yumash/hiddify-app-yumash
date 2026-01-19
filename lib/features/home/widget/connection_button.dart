@@ -7,6 +7,7 @@ import 'package:hiddify/core/theme/theme_extensions.dart';
 import 'package:hiddify/core/widget/animated_text.dart';
 import 'package:hiddify/features/config_option/data/config_option_repository.dart';
 import 'package:hiddify/features/config_option/notifier/config_option_notifier.dart';
+import 'package:hiddify/features/connection/model/connection_button_state.dart';
 import 'package:hiddify/features/connection/model/connection_status.dart';
 import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
 import 'package:hiddify/features/connection/widget/experimental_feature_notice.dart';
@@ -16,22 +17,26 @@ import 'package:hiddify/gen/assets.gen.dart';
 import 'package:hiddify/utils/alerts.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-// TODO: rewrite
 class ConnectionButton extends HookConsumerWidget {
   const ConnectionButton({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = ref.watch(translationsProvider);
-    final connectionStatus = ref.watch(connectionNotifierProvider);
-    final activeProxy = ref.watch(activeProxyNotifierProvider);
-    final delay = activeProxy.valueOrNull?.urlTestDelay ?? 0;
+    final connectionStatus = ref.watch(connectionProvider);
+    final delay = ref.watch(activeProxyProvider).value?.urlTestDelay ?? 0;
+    final requiresReconnect = ref.watch(configOptionProvider).value ?? false;
 
-    final requiresReconnect = ref.watch(configOptionNotifierProvider).valueOrNull;
-    final today = DateTime.now();
+    // Compute button state
+    final buttonState = ConnectionButtonState.from(
+      connectionStatus: connectionStatus,
+      requiresReconnect: requiresReconnect,
+      delay: delay,
+    );
 
+    // Listen for connection errors
     ref.listen(
-      connectionNotifierProvider,
+      connectionProvider,
       (_, next) {
         if (next case AsyncError(:final error)) {
           CustomAlertDialog.fromErr(t.presentError(error)).show(context);
@@ -44,80 +49,70 @@ class ConnectionButton extends HookConsumerWidget {
 
     final buttonTheme = Theme.of(context).extension<ConnectionButtonTheme>()!;
 
-    Future<bool> showExperimentalNotice() async {
-      final hasExperimental = ref.read(ConfigOptions.hasExperimentalFeatures);
-      final canShowNotice = !ref.read(disableExperimentalFeatureNoticeProvider);
-      if (hasExperimental && canShowNotice && context.mounted) {
-        return await const ExperimentalFeatureNoticeDialog().show(context) ?? false;
-      }
-      return true;
-    }
-
-    return _ConnectionButton(
-      onTap: switch (connectionStatus) {
-        AsyncData(value: Disconnected()) || AsyncError() => () async {
-            if (await showExperimentalNotice()) {
-              return await ref.read(connectionNotifierProvider.notifier).toggleConnection();
-            }
-          },
-        AsyncData(value: Connected()) => () async {
-            if (requiresReconnect == true && await showExperimentalNotice()) {
-              return await ref.read(connectionNotifierProvider.notifier).reconnect(await ref.read(activeProfileProvider.future));
-            }
-            return await ref.read(connectionNotifierProvider.notifier).toggleConnection();
-          },
-        _ => () {},
-      },
-      enabled: switch (connectionStatus) {
-        AsyncData(value: Connected()) || AsyncData(value: Disconnected()) || AsyncError() => true,
-        _ => false,
-      },
-      label: switch (connectionStatus) {
-        AsyncData(value: Connected()) when requiresReconnect == true => t.connection.reconnect,
-        AsyncData(value: Connected()) when delay <= 0 || delay >= 65000 => t.connection.connecting,
-        AsyncData(value: final status) => status.present(t),
-        _ => "",
-      },
-      buttonColor: switch (connectionStatus) {
-        AsyncData(value: Connected()) when requiresReconnect == true => Colors.teal,
-        AsyncData(value: Connected()) when delay <= 0 || delay >= 65000 => Color.fromARGB(255, 185, 176, 103),
-        AsyncData(value: Connected()) => buttonTheme.connectedColor!,
-        AsyncData(value: _) => buttonTheme.idleColor!,
-        _ => Colors.red,
-      },
-      image: switch (connectionStatus) {
-        AsyncData(value: Connected()) when requiresReconnect == true => Assets.images.disconnectNorouz,
-        AsyncData(value: Connected()) => Assets.images.connectNorouz,
-        AsyncData(value: _) => Assets.images.disconnectNorouz,
-        _ => Assets.images.disconnectNorouz,
-        AsyncData(value: Disconnected()) || AsyncError() => Assets.images.disconnectNorouz,
-        AsyncData(value: Connected()) => Assets.images.connectNorouz,
-        _ => Assets.images.disconnectNorouz,
-      },
-      useImage: today.day >= 19 && today.day <= 23 && today.month == 3,
+    return _ConnectionButtonView(
+      state: buttonState,
+      label: buttonState.label(t, connectionStatus.value),
+      color: buttonState.color(buttonTheme),
+      onTap: () => _handleTap(context, ref, buttonState, requiresReconnect),
     );
+  }
+
+  Future<void> _handleTap(
+    BuildContext context,
+    WidgetRef ref,
+    ConnectionButtonState state,
+    bool requiresReconnect,
+  ) async {
+    if (!state.isEnabled) return;
+
+    final notifier = ref.read(connectionProvider.notifier);
+
+    switch (state) {
+      case ConnectionButtonState.disconnected:
+      case ConnectionButtonState.error:
+        await notifier.toggleConnection();
+
+      case ConnectionButtonState.reconnectRequired:
+        final profile = await ref.read(activeProfileProvider.future);
+        await notifier.reconnect(profile);
+
+      case ConnectionButtonState.connected:
+        await notifier.toggleConnection();
+
+      case ConnectionButtonState.connecting:
+        // Button disabled during connecting
+        break;
+    }
+  }
+
+  Future<bool> _showExperimentalNoticeIfNeeded(BuildContext context, WidgetRef ref) async {
+    final hasExperimental = ref.read(ConfigOptions.hasExperimentalFeatures);
+    final canShowNotice = !ref.read(disableExperimentalFeatureNoticeProvider);
+
+    if (hasExperimental && canShowNotice && context.mounted) {
+      return await const ExperimentalFeatureNoticeDialog().show(context) ?? false;
+    }
+    return true;
   }
 }
 
-class _ConnectionButton extends StatelessWidget {
-  const _ConnectionButton({
-    required this.onTap,
-    required this.enabled,
+class _ConnectionButtonView extends StatelessWidget {
+  const _ConnectionButtonView({
+    required this.state,
     required this.label,
-    required this.buttonColor,
-    required this.image,
-    required this.useImage,
+    required this.color,
+    required this.onTap,
   });
 
-  final VoidCallback onTap;
-  final bool enabled;
+  final ConnectionButtonState state;
   final String label;
-  final Color buttonColor;
-  final AssetGenImage image;
-  final bool useImage;
+  final Color color;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    final enabled = state.isEnabled;
+
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -132,7 +127,7 @@ class _ConnectionButton extends StatelessWidget {
               boxShadow: [
                 BoxShadow(
                   blurRadius: 16,
-                  color: buttonColor.withOpacity(0.5),
+                  color: color.withValues(alpha: 0.5),
                 ),
               ],
             ),
@@ -147,19 +142,15 @@ class _ConnectionButton extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.all(36),
                   child: TweenAnimationBuilder(
-                    tween: ColorTween(end: buttonColor),
+                    tween: ColorTween(end: color),
                     duration: const Duration(milliseconds: 250),
                     builder: (context, value, child) {
-                      if (useImage) {
-                        return image.image(filterQuality: FilterQuality.medium);
-                      } else {
-                        return Assets.images.logo.svg(
-                          colorFilter: ColorFilter.mode(
-                            value!,
-                            BlendMode.srcIn,
-                          ),
-                        );
-                      }
+                      return Assets.images.logo.svg(
+                        colorFilter: ColorFilter.mode(
+                          value!,
+                          BlendMode.srcIn,
+                        ),
+                      );
                     },
                   ),
                 ),

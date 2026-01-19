@@ -25,7 +25,7 @@ class ProxyTile extends HookConsumerWidget with PresLogger {
       title: Text(
         proxy.name,
         overflow: TextOverflow.ellipsis,
-        style: TextStyle(fontFamily: FontFamily.emoji),
+        style: const TextStyle(fontFamily: FontFamily.emoji),
       ),
       leading: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
@@ -59,7 +59,7 @@ class ProxyTile extends HookConsumerWidget with PresLogger {
           : null,
       selected: selected,
       onTap: onSelect,
-      onLongPress: () async {
+      onLongPress: () {
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
