@@ -225,7 +225,6 @@ build.bat
 | Криптовалюта | Адрес |
 |--------------|-------|
 | **BTC (ByBit)** | `1BkYvFT8iBVG3GfTqkR2aBkABNkTrhYuja` |
-| **USDT TRC20** | `TULipWSgX7cKWn4Kd1xfaPdTcQyMqTqFim` |
 | **TON** | `UQDFaHBN1pcQZ7_9-w1E_hS_JNfGf3d0flS_467w7LOQ7xbK` |
 
 ---
