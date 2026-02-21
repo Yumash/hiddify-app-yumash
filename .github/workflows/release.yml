@@ -227,6 +227,32 @@ jobs:
           fi
           echo "tag=$VERSION" >> "$GITHUB_OUTPUT"
 
+      - name: Extract changelog
+        id: changelog
+        run: |
+          VERSION="${{ needs.build-flutter.outputs.version }}"
+          # Extract section for current version from CHANGELOG.md
+          # Grab everything between "## [VERSION]" and the next "## [" or "---"
+          BODY=$(awk "/^## \\[${VERSION}\\]/{found=1; next} found && /^(## \\[|---)/{exit} found{print}" CHANGELOG.md)
+          if [ -z "$BODY" ]; then
+            BODY="No changelog entry found for ${VERSION}."
+          fi
+          # Write to file to avoid multiline output issues
+          cat > release_body.md << INNEREOF
+          ## Hiddify Yumash Edition ${VERSION}
+
+          ### Установка / Installation
+          1. Скачайте \`Hiddify-Yumash-${VERSION}-windows-x64.zip\`
+          2. Распакуйте в любую папку / Extract to any folder
+          3. Запустите \`Hiddify.exe\` / Run \`Hiddify.exe\`
+
+          > Настройки хранятся в \`portable_data/\` рядом с exe.
+
+          ---
+
+          ${BODY}
+          INNEREOF
+
       - name: Create tag
         if: steps.check_tag.outputs.exists == 'false'
         run: |
@@ -246,15 +272,7 @@ jobs:
         with:
           tag_name: ${{ steps.check_tag.outputs.tag }}
           name: "Hiddify Yumash Edition ${{ needs.build-flutter.outputs.version }}"
-          body: |
-            ## Hiddify Yumash Edition ${{ needs.build-flutter.outputs.version }}
-
-            ### Installation
-            1. Download `Hiddify-Yumash-${{ needs.build-flutter.outputs.version }}-windows-x64.zip`
-            2. Extract to any folder
-            3. Run `Hiddify.exe`
-
-            Settings are stored in `portable_data/` next to the executable.
+          body_path: release_body.md
           files: |
             artifacts/**/*.zip
             artifacts/**/*.md5

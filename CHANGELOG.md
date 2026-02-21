@@ -6,6 +6,24 @@
 
 ---
 
+## [2.5.7-yumash-1.1.1] — 2026-02-22
+
+### Улучшено / Improved
+
+- **Кэширование CI/CD** — Docker BuildKit GHA cache для libcore/xray, pub cache для Flutter. Повторные сборки значительно быстрее
+- **CI/CD caching** — Docker BuildKit GHA cache for libcore/xray, pub cache for Flutter. Repeat builds significantly faster
+- **Changelog в релизах** — GitHub Release автоматически содержит changelog из CHANGELOG.md
+- **Release changelog** — GitHub Release now automatically includes changelog from CHANGELOG.md
+- **libcore вместо субмодуля** — Go-код libcore теперь обычная директория в репозитории (был сиротский gitlink)
+- **libcore as regular directory** — libcore Go source is now a regular directory in the repo (was orphaned gitlink)
+
+### Исправлено / Fixed
+
+- **dart analyze warning** — `parameter_assignments` в `animated_text.dart` (переназначение параметра `child`)
+- **dart analyze warning** — `parameter_assignments` in `animated_text.dart` (reassignment of `child` parameter)
+
+---
+
 ## [2.5.7-yumash-1.1.0] — 2026-02-22
 
 ### Исправлено / Fixed
