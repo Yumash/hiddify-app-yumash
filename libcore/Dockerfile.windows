@@ -11,13 +11,18 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /build
 
-# Extension system disabled - no longer need to copy extensions
-# COPY extension/hiddify-ip-scanner-extension ./extension/hiddify-ip-scanner-extension
+# Layer 1: Copy dependency manifests first (cached until go.mod/go.sum change)
+COPY go.mod go.sum ./
+COPY ray2sing/go.mod ray2sing/go.sum ./ray2sing/
+COPY sing-box/go.mod sing-box/go.sum ./sing-box/
 
-# Copy all files first (needed because go.mod has local replaces like ./ray2sing)
+# Download dependencies (this layer is cached if go.mod/go.sum unchanged)
+RUN go mod download
+
+# Layer 2: Copy source code (changes more often)
 COPY . .
 
-RUN go mod download && go mod tidy
+RUN go mod tidy
 
 ENV GOOS=windows
 ENV GOARCH=amd64

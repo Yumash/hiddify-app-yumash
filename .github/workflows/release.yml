@@ -23,12 +23,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build libcore.dll
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build libcore.dll (cached)
+        uses: docker/build-push-action@v6
+        with:
+          context: libcore
+          file: libcore/Dockerfile.windows
+          tags: hiddify-libcore-builder:latest
+          load: true
+          cache-from: type=gha,scope=libcore
+          cache-to: type=gha,mode=max,scope=libcore
+
+      - name: Extract libcore.dll
         working-directory: libcore
         run: |
-          docker build --no-cache -f Dockerfile.windows -t hiddify-libcore-builder .
           mkdir -p bin
-          docker run --rm -v "$(pwd)/bin:/output" hiddify-libcore-builder cp /out/libcore.dll /output/
+          docker run --rm -v "$(pwd)/bin:/output" hiddify-libcore-builder:latest cp /out/libcore.dll /output/
 
       - name: Verify libcore.dll
         run: |
@@ -48,12 +60,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build xray-core.exe
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build xray-core.exe (cached)
+        uses: docker/build-push-action@v6
+        with:
+          context: libcore
+          file: libcore/Dockerfile.xray
+          tags: hiddify-xray-builder:latest
+          load: true
+          cache-from: type=gha,scope=xray
+          cache-to: type=gha,mode=max,scope=xray
+
+      - name: Extract xray-core.exe
         working-directory: libcore
         run: |
-          docker build --no-cache -f Dockerfile.xray -t hiddify-xray-builder .
           mkdir -p bin
-          docker run --rm -v "$(pwd)/bin:/output" hiddify-xray-builder cp /xray-core.exe /output/
+          docker run --rm -v "$(pwd)/bin:/output" hiddify-xray-builder:latest cp /xray-core.exe /output/
 
       - name: Verify xray-core.exe
         run: |
@@ -91,6 +115,15 @@ jobs:
         with:
           channel: stable
           cache: true
+
+      - name: Cache pub dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~\AppData\Local\Pub\Cache
+            .dart_tool
+          key: pub-${{ hashFiles('pubspec.lock') }}
+          restore-keys: pub-
 
       - name: Download libcore.dll
         uses: actions/download-artifact@v4
