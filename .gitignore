@@ -4,10 +4,6 @@
 .pub-cache/
 .pub/
 build/
-**/*.g.dart
-**/*.freezed.dart
-**/*.mapper.dart
-**/*.gen.dart
 
 # Binaries
 **/*.dll
