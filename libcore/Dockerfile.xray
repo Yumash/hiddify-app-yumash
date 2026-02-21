@@ -1,0 +1,28 @@
+# Dockerfile for building Xray-core for Windows
+# Usage: docker build -f Dockerfile.xray --build-arg XRAY_VERSION=v25.1.1 -t hiddify-xray-builder .
+#        docker run --rm -v "%cd%\bin:/output" hiddify-xray-builder cp /xray-core.exe /output/
+
+FROM golang:1.25-alpine AS builder
+
+# Xray-core version - should match with what servers support
+ARG XRAY_VERSION=v25.12.8
+
+RUN apk add --no-cache git
+
+WORKDIR /build
+
+# Clone specific version
+RUN git clone --depth 1 --branch ${XRAY_VERSION} https://github.com/XTLS/Xray-core.git .
+
+# Build for Windows x64
+# CGO_ENABLED=0 for static binary
+# -trimpath removes build paths from binary
+# -ldflags "-s -w" strips debug info
+RUN CGO_ENABLED=0 GOOS=windows GOARCH=amd64 \
+    go build -trimpath \
+    -ldflags "-s -w -X github.com/xtls/xray-core/core.version=${XRAY_VERSION}" \
+    -o /out/xray-core.exe ./main
+
+# Output stage - alpine for cp command
+FROM alpine:latest
+COPY --from=builder /out/xray-core.exe /

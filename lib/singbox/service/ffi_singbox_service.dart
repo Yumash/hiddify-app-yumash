@@ -583,12 +583,10 @@ class FFISingboxService with InfraLogger implements SingboxService {
 
   // Xray config storage for Hiddify Manager subscriptions
   String? _xrayConfigPath;
-  String? _xrayConfigContent;
 
   @override
   void setXrayConfig(String path, String content) {
     _xrayConfigPath = path;
-    _xrayConfigContent = content;
     _logger.debug('Stored Xray config: $path (${content.length} bytes)');
 
     // Also pass to native code for xray core to use

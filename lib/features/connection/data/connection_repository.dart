@@ -203,11 +203,11 @@ class ConnectionRepositoryImpl with ExceptionHandler, InfraLogger implements Con
             result.fold(
               (error) {
                 // Enhanced error categorization
-                if (error.toString().contains("DNS") || error.toString().contains("resolve")) {
+                if (error.contains("DNS") || error.contains("resolve")) {
                   loggy.error("DNS resolution failed for Xray proxy '${group.selected}' - check hostname validity");
-                } else if (error.toString().contains("TLS") || error.toString().contains("handshake")) {
+                } else if (error.contains("TLS") || error.contains("handshake")) {
                   loggy.error("TLS handshake failed for Xray proxy '${group.selected}' - check SNI and certificate");
-                } else if (error.toString().contains("timeout")) {
+                } else if (error.contains("timeout")) {
                   loggy.error("Connection timeout for Xray proxy '${group.selected}' - proxy may be offline");
                 } else {
                   loggy.error("Failed to start Xray for ${group.selected}: $error");

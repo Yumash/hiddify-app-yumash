@@ -78,9 +78,7 @@ class ProxiesOverviewNotifier extends _$ProxiesOverviewNotifier with AppLogger {
         }
         profileId = profile.id;
       case AsyncData(value: final profile):
-        // Profile exists, continue
         profileId = profile?.id;
-        break;
     }
 
     loggy.debug("ProxiesOverviewNotifier: checking serviceRunning...");

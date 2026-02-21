@@ -51,7 +51,7 @@ class HomeStatsWidget extends HookConsumerWidget {
                       Text(info.ip, style: theme.textTheme.bodyMedium),
                     ],
                   ),
-                AsyncLoading() => SizedBox(
+                AsyncLoading() => const SizedBox(
                     width: 14,
                     height: 14,
                     child: CircularProgressIndicator(strokeWidth: 2),

@@ -9,10 +9,10 @@ import 'package:hiddify/features/common/nested_app_bar.dart';
 import 'package:hiddify/features/home/widget/connection_button.dart';
 import 'package:hiddify/features/home/widget/core_indicator.dart';
 import 'package:hiddify/features/home/widget/empty_profiles_home_body.dart';
+import 'package:hiddify/features/home/widget/home_stats_widget.dart';
 import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
 import 'package:hiddify/features/profile/notifier/profile_state_providers.dart';
 import 'package:hiddify/features/profile/widget/profile_tile.dart';
-import 'package:hiddify/features/home/widget/home_stats_widget.dart';
 import 'package:hiddify/features/proxy/active/active_proxy_delay_indicator.dart';
 import 'package:hiddify/utils/utils.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -63,12 +63,12 @@ class HomePage extends HookConsumerWidget {
                 AsyncData(value: final profile?) => MultiSliver(
                     children: [
                       ProfileTile(profile: profile, isMain: true),
-                      SliverFillRemaining(
+                      const SliverFillRemaining(
                         hasScrollBody: false,
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Expanded(
+                            Expanded(
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 mainAxisAlignment: MainAxisAlignment.center,

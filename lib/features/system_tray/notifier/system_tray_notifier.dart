@@ -1,5 +1,3 @@
-import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/model/constants.dart';
 import 'package:hiddify/features/connection/model/connection_status.dart';

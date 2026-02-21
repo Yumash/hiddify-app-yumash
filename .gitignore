@@ -33,3 +33,12 @@ portable_data/
 # Test files
 test_*.txt
 test_*.py
+
+# Claude Code framework
+.claude-lib/
+.claude/
+.claude-project/
+.rag/
+.mcp.json
+CLAUDE.md
+.ypn-gitlab/

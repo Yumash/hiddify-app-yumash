@@ -4,11 +4,9 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:gap/gap.dart';
 import 'package:hiddify/core/localization/translations.dart';
 import 'package:hiddify/core/model/optional_range.dart';
-import 'package:hiddify/core/model/region.dart';
 import 'package:hiddify/core/notification/in_app_notification_controller.dart';
 import 'package:hiddify/core/router/routes.dart';
 import 'package:hiddify/core/widget/adaptive_icon.dart';
-import 'package:hiddify/core/widget/tip_card.dart';
 import 'package:hiddify/features/common/confirmation_dialogs.dart';
 import 'package:hiddify/features/common/nested_app_bar.dart';
 import 'package:hiddify/features/config_option/data/config_option_repository.dart';
@@ -23,7 +21,6 @@ import 'package:hiddify/features/settings/widgets/settings_input_dialog.dart';
 import 'package:hiddify/singbox/model/singbox_config_enum.dart';
 import 'package:hiddify/utils/utils.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:humanizer/humanizer.dart';
 
 enum ConfigOptionSection {
   fragment;
@@ -64,10 +61,6 @@ class ConfigOptionsPage extends HookConsumerWidget {
         }
       },
     );
-
-    String experimental(String txt) {
-      return "$txt (${t.settings.experimental})";
-    }
 
     return Scaffold(
       body: CustomScrollView(

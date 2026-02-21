@@ -1,0 +1,75 @@
+package config
+
+import (
+	"context"
+	"fmt"
+	"log"
+	"net"
+	"os"
+	"path/filepath"
+
+	"github.com/sagernet/sing-box/experimental/libbox"
+	"github.com/sagernet/sing-box/option"
+	"google.golang.org/grpc"
+)
+
+type server struct {
+	UnimplementedCoreServiceServer
+}
+
+func String(s string) *string {
+	return &s
+}
+
+func (s *server) ParseConfig(ctx context.Context, in *ParseConfigRequest) (*ParseConfigResponse, error) {
+	config, err := ParseConfig(in.TempPath, in.Debug)
+	if err != nil {
+		return &ParseConfigResponse{Error: String(err.Error())}, nil
+	}
+	err = os.WriteFile(in.Path, config, 0o644)
+	if err != nil {
+		return nil, err
+	}
+	return &ParseConfigResponse{Error: String("")}, nil
+}
+
+func (s *server) GenerateFullConfig(_ context.Context, in *GenerateConfigRequest) (*GenerateConfigResponse, error) {
+	os.Chdir(filepath.Dir(in.Path))
+	content, err := os.ReadFile(in.Path)
+	if err != nil {
+		return nil, err
+	}
+	var options option.Options
+	// In sing-box 1.12+, Options uses UnmarshalJSONContext with registry context
+	boxCtx := libbox.BaseContext(nil)
+	err = options.UnmarshalJSONContext(boxCtx, content)
+	if err != nil {
+		return nil, err
+	}
+	config, err := BuildConfigJson(*DefaultHiddifyOptions(), options)
+	if err != nil {
+		return nil, err
+	}
+	return &GenerateConfigResponse{
+		Config: config,
+	}, nil
+}
+
+func StartGRPCServer(port uint16) error {
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+	if err != nil {
+		log.Fatalf("Failed to listen: %v", err)
+	}
+
+	s := grpc.NewServer()
+	RegisterCoreServiceServer(s, &server{})
+
+	log.Println("Server started on :", port)
+	go func() {
+		if err := s.Serve(lis); err != nil {
+			log.Fatalf("Failed to serve: %v", err)
+		}
+	}()
+
+	return nil
+}

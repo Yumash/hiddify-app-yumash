@@ -6,21 +6,27 @@
 
 ---
 
-## [Unreleased]
+## [2.5.7-yumash-1.1.0] — 2026-02-22
 
-### Архитектура / Architecture
+### Исправлено / Fixed
 
-- **sing-box выведен из сабмодуля** — код sing-box теперь включён напрямую в репозиторий из-за значительных модификаций ядра. Это позволяет проще отслеживать изменения и упрощает сборку. Оригинальный sing-box не поддерживает многие функции, необходимые для работы с Hiddify Manager (TLS tricks, xray bridging и др.)
-- **sing-box removed from submodule** — sing-box code is now included directly in the repository due to significant core modifications. This makes tracking changes easier and simplifies builds. Original sing-box doesn't support many features required for Hiddify Manager compatibility (TLS tricks, xray bridging, etc.)
-
-### Планы / Roadmap
-
-> **Следующий мажорный релиз:** переход на собственную реализацию xray+singbox функционала на **Rust**. Это обеспечит более стабильную работу, меньший размер бинарников и упрощённую архитектуру без необходимости поддерживать форк sing-box.
->
-> **Next major release:** migration to custom **Rust** implementation of xray+singbox functionality. This will provide more stable operation, smaller binary size, and simplified architecture without the need to maintain a sing-box fork.
+- **Rule-sets не загружались в России** — фильтры (блокировка рекламы, обход российских сайтов/IP) пытались скачать `.srs` файлы с `raw.githubusercontent.com` напрямую, что невозможно без VPN. Добавлен `DownloadDetour` — теперь rule-sets загружаются через прокси (#2)
+- **Rule-sets failed to load in Russia** — filters (ad blocking, Russian sites/IP bypass) tried to download `.srs` files from `raw.githubusercontent.com` directly, which is impossible without VPN. Added `DownloadDetour` — rule-sets now download through proxy (#2)
+- **Чёрное окно Xray-core** — при переключении на xray outbound открывалось чёрное консольное окно рядом с приложением. Добавлен флаг `CREATE_NO_WINDOW` для скрытия окна подпроцесса
+- **Xray-core black console window** — switching to xray outbound opened a visible console window. Added `CREATE_NO_WINDOW` flag to hide subprocess window
+- **Баг в парсинге доменов** — `strings.HasPrefix("full:", domain)` (аргументы перепутаны местами) приводил к неверному матчингу полных доменов в правилах маршрутизации
+- **Domain parsing bug** — `strings.HasPrefix("full:", domain)` (swapped arguments) caused incorrect full domain matching in routing rules
+- **Утечка конфигурации в лог** — `fmt.Printf` с конфигурационными опциями (включая потенциально чувствительные данные) попадал в stdout
+- **Config leak to stdout** — `fmt.Printf` with config options (potentially sensitive data) was written to stdout
+- **Ошибки компиляции link_sanitizer.dart** — статические методы обращались к instance-member `loggy` от mixin, что вызывало 6 ошибок компиляции
+- **link_sanitizer.dart compilation errors** — static methods accessed instance member `loggy` from mixin, causing 6 compilation errors
 
 ### Добавлено / Added
 
+- **GitHub Actions CI/CD** — автоматическая сборка и релиз через GitHub Actions. Сборка libcore.dll и xray-core.exe в Docker на Linux, Flutter build на Windows runner
+- **GitHub Actions CI/CD** — automated build and release via GitHub Actions. libcore.dll and xray-core.exe built in Docker on Linux, Flutter build on Windows runner
+- **Go-код libcore включён в репозиторий** — исходный код sing-box (libcore) и Dockerfiles теперь в основном репозитории для полной воспроизводимости сборки
+- **libcore Go source included in repo** — sing-box source code (libcore) and Dockerfiles now in main repository for full build reproducibility
 - **TLS Tricks: Mixed SNI Case** — поддержка рандомизации регистра SNI (`google.com` → `GoOgLe.CoM`) для обхода DPI-блокировок, чувствительных к регистру
 - **Конвертация Hiddify Manager TLS полей** — автоматическое преобразование полей `tls_tricks` и `tls_fragment` из Hiddify Manager в формат sing-box
 - **Сохранение отладочных данных** — сырые ответы от серверов подписок сохраняются в `portable_data/debug/` для диагностики
@@ -39,6 +45,10 @@
 
 - **Использование xray_outbound_raw** — Hiddify Manager отправляет готовые Xray JSON конфиги в поле `xray_outbound_raw`. Теперь они используются напрямую вместо парсинга ссылок, что обеспечивает 100% совместимость с настройками сервера
 - **xray_outbound_raw support** — Hiddify Manager sends ready Xray JSON configs in `xray_outbound_raw` field. Now used directly instead of link parsing, ensuring 100% compatibility with server settings
+- **Очистка Go-кода libcore** — удалён мёртвый код: Android-specific блоки, закомментированные функции (trickDns, Clash mode, GeoIP/Geosite), неиспользуемые функции (getIPs, isBlockedDomain, removeDuplicateStr, generateRandomString). Файл config.go уменьшен на ~130 строк
+- **libcore Go code cleanup** — removed dead code: Android-specific blocks, commented-out functions (trickDns, Clash mode, GeoIP/Geosite), unused functions (getIPs, isBlockedDomain, removeDuplicateStr, generateRandomString). config.go reduced by ~130 lines
+- **Чистка dart analyze** — исправлены все warnings и infos (29 → 0): удалены неиспользуемые импорты, мёртвый код, добавлены const конструкторы, исправлена сортировка директив
+- **dart analyze cleanup** — fixed all warnings and infos (29 → 0): removed unused imports, dead code, added const constructors, fixed directive ordering
 
 ### Исправлено / Fixed
 
@@ -158,7 +168,7 @@
 - 18 локалей (оставлены только RU и EN)
 - Мобильный код: haptic feedback, per-app proxy, share_plus
 - gRPC protobuf файлы
-- Тесты и CI/CD workflows
+- Тесты (CI/CD восстановлено в v1.1.0)
 - `flutter_adaptive_scaffold` — заменён на собственную реализацию NavigationRail
 - `protocol_handler` — deep links не нужны для portable приложения
 - `vclibs` — не использовался в коде
@@ -239,7 +249,7 @@ First release of Yumash Edition based on Hiddify 2.5.7.
 - 18 locales (kept only RU and EN)
 - Mobile code: haptic feedback, per-app proxy, share_plus
 - gRPC protobuf files
-- Tests and CI/CD workflows
+- Tests (CI/CD restored in v1.1.0)
 
 ### Changed
 

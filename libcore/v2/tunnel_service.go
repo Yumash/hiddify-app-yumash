@@ -1,0 +1,109 @@
+package v2
+
+import (
+	"context"
+	"fmt"
+	"log"
+	"os"
+
+	pb "github.com/hiddify/hiddify-core/hiddifyrpc"
+)
+
+func (s *TunnelService) Start(ctx context.Context, in *pb.TunnelStartRequest) (*pb.TunnelResponse, error) {
+	if in.ServerPort == 0 {
+		in.ServerPort = 22334 // Yumash Edition: different port to allow running alongside original Hiddify
+	}
+	useFlutterBridge = false
+	res, err := Start(&pb.StartRequest{
+		ConfigContent:          makeTunnelConfig(in.ServerPort, in.StrictRoute, in.EndpointIndependentNat, in.Stack),
+		EnableOldCommandServer: false,
+		DisableMemoryLimit:     true,
+		EnableRawConfig:        true,
+	})
+	fmt.Printf("Start Result: %+v\n", res)
+	if err != nil {
+		return &pb.TunnelResponse{
+			Message: err.Error(),
+		}, err
+	}
+	return &pb.TunnelResponse{
+		Message: "OK",
+	}, err
+}
+
+func makeTunnelConfig(ServerPort int32, StrictRoute bool, EndpointIndependentNat bool, Stack string) string {
+	base := `{
+		"log":{
+			"level": "warn"
+		},
+		"inbounds": [
+		  {
+			"type": "tun",
+			"tag": "tun-in",
+			"interface_name": "HiddifyYumash",
+			"inet4_address": "172.19.1.1/30",
+			"auto_route": true,
+			"strict_route": ` + fmt.Sprintf("%t", StrictRoute) + `,
+			"endpoint_independent_nat": ` + fmt.Sprintf("%t", EndpointIndependentNat) + `,
+			"stack": "` + Stack + `"
+		  }
+		],
+		"outbounds": [
+		  {
+			"type": "socks",
+			"tag": "socks-out",
+			"server": "127.0.0.1",
+			"server_port": ` + fmt.Sprintf("%d", ServerPort) + `,
+			"version": "5"
+		  },
+		  {
+			"type": "direct",
+			"tag": "direct-out"
+		  }
+		],
+		"route": {
+		  "rules": [
+			{
+				"process_name":[
+					"Hiddify.exe",
+					"Hiddify",
+					"HiddifyCli",
+					"HiddifyCli.exe",
+					"HiddifyYumash.exe",
+					"HiddifyYumash"
+					],
+				"outbound": "direct-out"
+			}
+		  ]
+		}
+	  }`
+
+	return base
+}
+
+func (s *TunnelService) Stop(ctx context.Context, _ *pb.Empty) (*pb.TunnelResponse, error) {
+	res, err := Stop()
+	log.Printf("Stop Result: %+v\n", res)
+	if err != nil {
+		return &pb.TunnelResponse{
+			Message: err.Error(),
+		}, err
+	}
+
+	return &pb.TunnelResponse{
+		Message: "OK",
+	}, err
+}
+func (s *TunnelService) Status(ctx context.Context, _ *pb.Empty) (*pb.TunnelResponse, error) {
+
+	return &pb.TunnelResponse{
+		Message: "Not Implemented",
+	}, nil
+}
+func (s *TunnelService) Exit(ctx context.Context, _ *pb.Empty) (*pb.TunnelResponse, error) {
+	Stop()
+	os.Exit(0)
+	return &pb.TunnelResponse{
+		Message: "OK",
+	}, nil
+}

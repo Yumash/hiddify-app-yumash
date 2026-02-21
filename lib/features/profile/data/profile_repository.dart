@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:drift/drift.dart';
 import 'package:fpdart/fpdart.dart';
-import 'package:rxdart/rxdart.dart';
 import 'package:hiddify/core/database/app_database.dart';
 import 'package:hiddify/core/http_client/dio_http_client.dart';
 import 'package:hiddify/core/utils/exception_handler.dart';
@@ -21,6 +20,7 @@ import 'package:hiddify/singbox/service/singbox_service.dart';
 import 'package:hiddify/utils/custom_loggers.dart';
 import 'package:hiddify/utils/link_parsers.dart';
 import 'package:meta/meta.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:uuid/uuid.dart';
 
 /// Result of fetching Hiddify Manager subscription
@@ -560,7 +560,7 @@ class ProfileRepositoryImpl with ExceptionHandler, InfraLogger implements Profil
     String? singboxContent;
     String? xrayContent;
     Map<String, List<String>> headers = {};
-    List<String> errors = [];
+    final List<String> errors = [];
 
     // Use specific User-Agents to get clean responses from Hiddify Manager:
     // - "sing-box/1.12" for /singbox: returns pure sing-box JSON without type:"xray" placeholders

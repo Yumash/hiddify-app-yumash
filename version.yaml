@@ -3,4 +3,4 @@
 # Example: 2.5.7-yumash-1.0.0
 
 hiddify_base: "2.5.7"
-yumash_version: "1.0.0"
+yumash_version: "1.1.0"

@@ -224,6 +224,7 @@ build.bat
 
 | Криптовалюта | Адрес |
 |--------------|-------|
+| **USDT TRC20 (ByBit)** | `TGaUz963ZaCoHrfoDDgy1sCvSrK1wsZvcx` |
 | **BTC (ByBit)** | `1BkYvFT8iBVG3GfTqkR2aBkABNkTrhYuja` |
 | **TON** | `UQDFaHBN1pcQZ7_9-w1E_hS_JNfGf3d0flS_467w7LOQ7xbK` |
 
@@ -233,7 +234,7 @@ build.bat
 
 Проект распространяется под лицензией [Hiddify Extended GPLv3](LICENSE.md).
 
-> **Важно:** Оригинальная лицензия Hiddify требует, чтобы форки собирались через GitHub Actions. Это требование [обсуждается](https://github.com/hiddify/hiddify-app/issues/3334) в официальном репозитории. Yumash Edition использует локальную сборку через Docker.
+> Сборка осуществляется через GitHub Actions. Локальная сборка также возможна через `build.bat`.
 
 ---
 
