@@ -1,5 +1,9 @@
 # Hiddify Yumash Edition
 
+> **Проект не поддерживается.** Ведётся разработка отдельного клиента.
+>
+> **This project is no longer maintained.** A separate client is being developed.
+
 <p align="center">
   <img src="assets/images/logo.svg" width="128" height="128" alt="Hiddify Logo">
 </p>
