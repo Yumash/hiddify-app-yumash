@@ -685,7 +685,18 @@ func filterUnsupportedOutbounds(jsonObj map[string]interface{}) ([]string, int) 
 			continue
 		}
 
+		// Check transport type — filter xhttp/splithttp (not supported by sing-box)
 		if supportedOutboundTypes[outboundType] {
+			if transport, ok := outboundMap["transport"].(map[string]interface{}); ok {
+				if transportType, _ := transport["type"].(string); transportType == "xhttp" || transportType == "splithttp" {
+					removedTypes = append(removedTypes, outboundType+"/"+transportType)
+					removedCount++
+					if tag, ok := outboundMap["tag"].(string); ok {
+						removedTags = append(removedTags, tag)
+					}
+					continue
+				}
+			}
 			filteredOutbounds = append(filteredOutbounds, outbound)
 		} else {
 			removedTypes = append(removedTypes, outboundType)
@@ -747,171 +758,9 @@ func filterUnsupportedOutbounds(jsonObj map[string]interface{}) ([]string, int) 
 // Must match the value in xray/core_selector.go and ray2sing/convert.go
 const XrayFixedPort uint16 = 12380
 
-// hasXHTTPTransport checks if a sing-box outbound uses xhttp/splithttp transport
-func hasXHTTPTransport(outboundMap map[string]interface{}) bool {
-	transport, ok := outboundMap["transport"].(map[string]interface{})
-	if !ok {
-		return false
-	}
-	transportType, _ := transport["type"].(string)
-	return transportType == "xhttp" || transportType == "splithttp"
-}
-
-// singboxOutboundToXrayRaw converts a sing-box JSON outbound with xhttp transport
-// to an Xray-core raw outbound format for use with StartXrayForRawOutbound
-func singboxOutboundToXrayRaw(outboundMap map[string]interface{}, debug bool) map[string]interface{} {
-	outboundType, _ := outboundMap["type"].(string)
-	tag, _ := outboundMap["tag"].(string)
-	server, _ := outboundMap["server"].(string)
-
-	// server_port can be float64 (JSON number) or int
-	var serverPort float64
-	switch p := outboundMap["server_port"].(type) {
-	case float64:
-		serverPort = p
-	case int:
-		serverPort = float64(p)
-	}
-
-	// Map sing-box type to Xray protocol
-	protocol := outboundType // vless, vmess, trojan
-	if protocol == "shadowsocks" {
-		protocol = "shadowsocks" // same name
-	}
-
-	// Build Xray outbound
-	xrayOutbound := map[string]interface{}{
-		"tag":      tag,
-		"protocol": protocol,
-	}
-
-	// Build protocol-specific settings
-	switch outboundType {
-	case "vless":
-		uuid, _ := outboundMap["uuid"].(string)
-		flow, _ := outboundMap["flow"].(string)
-		user := map[string]interface{}{
-			"id":         uuid,
-			"encryption": "none",
-		}
-		if flow != "" {
-			user["flow"] = flow
-		}
-		xrayOutbound["settings"] = map[string]interface{}{
-			"vnext": []interface{}{
-				map[string]interface{}{
-					"address": server,
-					"port":    serverPort,
-					"users":   []interface{}{user},
-				},
-			},
-		}
-	case "vmess":
-		uuid, _ := outboundMap["uuid"].(string)
-		xrayOutbound["settings"] = map[string]interface{}{
-			"vnext": []interface{}{
-				map[string]interface{}{
-					"address": server,
-					"port":    serverPort,
-					"users": []interface{}{
-						map[string]interface{}{
-							"id":       uuid,
-							"security": "auto",
-						},
-					},
-				},
-			},
-		}
-	case "trojan":
-		password, _ := outboundMap["password"].(string)
-		xrayOutbound["settings"] = map[string]interface{}{
-			"servers": []interface{}{
-				map[string]interface{}{
-					"address":  server,
-					"port":     serverPort,
-					"password": password,
-				},
-			},
-		}
-	}
-
-	// Build streamSettings
-	streamSettings := map[string]interface{}{
-		"network": "xhttp",
-	}
-
-	// TLS settings
-	if tlsObj, ok := outboundMap["tls"].(map[string]interface{}); ok {
-		enabled, _ := tlsObj["enabled"].(bool)
-		if enabled {
-			streamSettings["security"] = "tls"
-			tlsSettings := map[string]interface{}{}
-			if sni, ok := tlsObj["server_name"].(string); ok && sni != "" {
-				tlsSettings["serverName"] = sni
-			}
-			if insecure, ok := tlsObj["insecure"].(bool); ok {
-				tlsSettings["allowInsecure"] = insecure
-			}
-			if alpn, ok := tlsObj["alpn"].([]interface{}); ok {
-				var alpnStrings []string
-				for _, a := range alpn {
-					if s, ok := a.(string); ok {
-						alpnStrings = append(alpnStrings, s)
-					}
-				}
-				if len(alpnStrings) > 0 {
-					tlsSettings["alpn"] = alpnStrings
-				}
-			}
-			// Use utls fingerprint if available
-			if utls, ok := tlsObj["utls"].(map[string]interface{}); ok {
-				if fp, ok := utls["fingerprint"].(string); ok && fp != "" {
-					tlsSettings["fingerprint"] = fp
-				}
-			}
-			if len(tlsSettings) > 0 {
-				streamSettings["tlsSettings"] = tlsSettings
-			}
-		}
-	}
-
-	// Transport (xhttp) settings
-	if transport, ok := outboundMap["transport"].(map[string]interface{}); ok {
-		xhttpSettings := map[string]interface{}{}
-		if path, ok := transport["path"].(string); ok && path != "" {
-			xhttpSettings["path"] = path
-		}
-		// host can be string or []string in sing-box
-		if host, ok := transport["host"].(string); ok && host != "" {
-			xhttpSettings["host"] = host
-		} else if hosts, ok := transport["host"].([]interface{}); ok && len(hosts) > 0 {
-			if h, ok := hosts[0].(string); ok {
-				xhttpSettings["host"] = h
-			}
-		}
-		if mode, ok := transport["mode"].(string); ok && mode != "" {
-			xhttpSettings["mode"] = mode
-		}
-		if len(xhttpSettings) > 0 {
-			streamSettings["xhttpSettings"] = xhttpSettings
-		}
-	}
-
-	xrayOutbound["streamSettings"] = streamSettings
-
-	if debug {
-		fmt.Printf("[SingboxParser] Converted sing-box %s outbound to Xray raw: tag=%s, server=%s:%v\n",
-			outboundType, tag, server, serverPort)
-	}
-
-	return xrayOutbound
-}
-
-// convertXrayOutboundsToSocks finds outbounds with type "xray" or xhttp transport and converts them to socks outbounds
+// convertXrayOutboundsToSocks finds outbounds with type "xray" and converts them to socks outbounds
 // Returns the xray links and info for later Xray startup
-// Supports:
-// 1. type "xray" with "link" field (vless://...) or "xray_outbound_raw" (ready Xray JSON from Hiddify Manager)
-// 2. Regular outbounds (vless/vmess/trojan) with transport.type "xhttp"/"splithttp" — converted to Xray raw format
+// Supports type "xray" with "link" field (vless://...) or "xray_outbound_raw" (ready Xray JSON from Hiddify Manager)
 func convertXrayOutboundsToSocks(jsonObj map[string]interface{}, debug bool) ([]string, []XrayProxyInfo) {
 	outbounds, ok := jsonObj["outbounds"].([]interface{})
 	if !ok {
@@ -977,41 +826,6 @@ func convertXrayOutboundsToSocks(jsonObj map[string]interface{}, debug bool) ([]
 			}
 
 			xrayLinks = append(xrayLinks, link)
-			xrayInfos = append(xrayInfos, info)
-			newOutbounds = append(newOutbounds, socksOutbound)
-			xrayIndex++
-			continue
-		}
-
-		// Case 2: Regular outbound (vless/vmess/trojan) with xhttp/splithttp transport
-		// Hiddify Manager /singbox endpoint with sing-box UA returns these
-		if hasXHTTPTransport(outboundMap) {
-			originalTag, _ := outboundMap["tag"].(string)
-			newTag := fmt.Sprintf("%s [xray:%d]", originalTag, xrayIndex)
-
-			// Convert sing-box outbound to Xray raw format
-			xrayRaw := singboxOutboundToXrayRaw(outboundMap, debug)
-
-			socksOutbound := map[string]interface{}{
-				"type":        "socks",
-				"tag":         newTag,
-				"server":      "127.0.0.1",
-				"server_port": XrayFixedPort,
-			}
-
-			if debug {
-				fmt.Printf("[SingboxParser] Converting xhttp outbound to Xray socks: %s -> %s\n", originalTag, newTag)
-			}
-
-			info := XrayProxyInfo{
-				Tag:         newTag,
-				Link:        "", // No link, using raw outbound
-				Index:       xrayIndex,
-				ProxyName:   originalTag,
-				RawOutbound: xrayRaw,
-			}
-
-			xrayLinks = append(xrayLinks, "") // Placeholder for backward compatibility
 			xrayInfos = append(xrayInfos, info)
 			newOutbounds = append(newOutbounds, socksOutbound)
 			xrayIndex++
