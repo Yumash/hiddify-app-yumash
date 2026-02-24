@@ -196,28 +196,27 @@ func GetXrayConfigJson() string {
 }
 
 // Supported sing-box outbound types
+// NOTE: "naive" is inbound-only in sing-box, "shadowsocksr" is deprecated since 1.6.0
 var supportedOutboundTypes = map[string]bool{
-	"direct":       true,
-	"block":        true,
-	"socks":        true,
-	"http":         true,
-	"shadowsocks":  true,
-	"vmess":        true,
-	"trojan":       true,
-	"naive":        true,
-	"wireguard":    true,
-	"hysteria":     true,
-	"tor":          true,
-	"ssh":          true,
-	"shadowtls":    true,
-	"shadowsocksr": true,
-	"vless":        true,
-	"tuic":         true,
-	"hysteria2":    true,
-	"selector":     true,
-	"urltest":      true,
-	"dns":          true,
-	"anytls":       true,
+	"direct":      true,
+	"block":       true,
+	"socks":       true,
+	"http":        true,
+	"shadowsocks": true,
+	"vmess":       true,
+	"trojan":      true,
+	"wireguard":   true,
+	"hysteria":    true,
+	"tor":         true,
+	"ssh":         true,
+	"shadowtls":   true,
+	"vless":       true,
+	"tuic":        true,
+	"hysteria2":   true,
+	"selector":    true,
+	"urltest":     true,
+	"dns":         true,
+	"anytls":      true,
 }
 
 //go:embed config.json.template

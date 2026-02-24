@@ -6,12 +6,14 @@
 
 ---
 
-## [2.5.7-yumash-1.1.2] — 2026-02-24
+## [2.5.7-yumash-1.1.3] — 2026-02-24
 
 ### Исправлено / Fixed
 
 - **Ошибка добавления подписок с xhttp транспортом** — Hiddify Manager `/singbox` эндпоинт возвращает аутбаунды (vless/vmess/trojan) с `transport.type: "xhttp"`, которые sing-box не поддерживает. Теперь такие аутбаунды автоматически конвертируются в Xray-core формат и направляются через SOCKS-мост, как и остальные xhttp-прокси
 - **Failed to add subscriptions with xhttp transport** — Hiddify Manager `/singbox` endpoint returns outbounds (vless/vmess/trojan) with `transport.type: "xhttp"` which sing-box doesn't support. These outbounds are now automatically converted to Xray-core format and routed through the SOCKS bridge, like other xhttp proxies
+- **Фильтрация неподдерживаемых аутбаундов** — убраны `naive` (только inbound в sing-box) и `shadowsocksr` (deprecated с sing-box 1.6.0) из списка поддерживаемых типов, теперь они корректно фильтруются вместо ошибки валидации
+- **Filter unsupported outbound types** — removed `naive` (inbound-only in sing-box) and `shadowsocksr` (deprecated since sing-box 1.6.0) from supported types list, they are now properly filtered instead of causing validation errors
 
 ---
 
